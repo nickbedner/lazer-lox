@@ -14,6 +14,20 @@ class App extends JPanel {
         rings[1][0] = 1;
     }
 
+    public boolean GetGoal(int index){
+        if (index < 0 || index > 11) {
+            throw new IllegalArgumentException("Index out of bounds");
+        }
+        return goalRing[index];
+    }
+
+    public int GetRingNode(int ring, int index){
+        if (ring < 1 || ring > 3 || index < 0 || index > 11) {
+            throw new IllegalArgumentException("Index out of bounds");
+        }
+        return rings[ring][index];
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
