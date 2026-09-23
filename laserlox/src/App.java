@@ -1,68 +1,47 @@
 import javax.swing.*;
 import java.awt.*;
-import java.util.Random;
 
-public class App extends JPanel {
-    
+class App extends JPanel {
+    private final boolean[] goalRing = new boolean[12];
+    private final int[][] rings = new int[4][12];
+
+    public App() {
+        goalRing[0] = false;
+        goalRing[1] = true;
+        rings[0][0] = 0;
+        rings[0][1] = 1;
+        rings[0][2] = 4;
+        rings[1][0] = 1;
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         super.paintComponent(g2d);
-        Random random = new Random();
-        g2d.setColor(Color.WHITE);
-        g2d.fillRect(0, 0, getWidth(), getHeight());
-        g2d.setColor(Color.BLACK);
+        g2d.setColor(Color.BLUE);
         g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        int offset = 30;
-        int offsetx = offset;
-        int offsety = offset;
-        for (int c = 0; c < 11; c++) {
-            g2d.drawLine(offsetx, offsety, offsetx, offsety + 320);
-            offsetx += 32;
-        }
-        offsetx = offset;
-        for (int r = 0; r < 11; r++) {
-            g2d.drawLine(offsetx, offsety, offsetx + 320, offsety);
-            offsety += 32;
-        }
-        offsetx = 40;
-        for (int i = 0; i < 10; i++) {
-            int randColor = random.nextInt(6);
-            switch (randColor) {
-                case 0:
-                    g.setColor(Color.RED);
-                    break;
-                case 1:
-                    g.setColor(Color.ORANGE);
-                    break;
-                case 2:
-                    g.setColor(Color.YELLOW);
-                    break;
-                case 3:
-                    g.setColor(Color.GREEN);
-                    break;
-                case 4:
-                    g.setColor(Color.BLUE);
-                    break;
-                case 5:
-                    g.setColor(Color.BLACK);
-                    break;
+        int offsetx = 30;
+        int offsety = 30;
+        for(int i = 0; i < 12; i++){
+            if(goalRing[i] == true){
+                g2d.fillOval(i * offsetx, 0, 10, 10);
             }
-            int height = random.nextInt(310) + 10;
-            g2d.fillRect(offsetx, 350 - height, 15, height);
-            offsetx += 32;
+        }
+        for(int ring = 0; ring < 4; ring++){
+            for(int i = 0; i < 12; i++){
+                if(rings[ring][i] == 1){
+                    g2d.setColor(Color.RED);
+                   g2d.fillRect(i * offsetx, (ring + 1) * offsety, 5, 15); 
+                }else if(rings[ring][i] == 4){
+                    g2d.setColor(Color.BLACK);
+                    g2d.fillRect(i * offsetx, (ring + 1) * offsety, 10, 10);
+                }
+            }
         }
     }
 
     public static void main(String[] args) throws Exception {
-        JFrame frame = new JFrame("Random Rectangles");
-
-        JButton button = new JButton("Redraw");
-        frame.add(button, BorderLayout.SOUTH);
-
-        button.addActionListener(e -> {
-            frame.repaint();
-        });
+        JFrame frame = new JFrame("LazerLox");
 
         frame.add(new App());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
