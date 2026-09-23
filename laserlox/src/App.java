@@ -3,29 +3,12 @@ import java.awt.*;
 
 class App extends JPanel {
     private final boolean[] goalRing = new boolean[12];
-    private final int[][] rings = new int[4][12];
+    private final int[][] rings = new int[3][12];
 
     public App() {
-        goalRing[0] = false;
-        goalRing[1] = true;
-        rings[0][0] = 0;
-        rings[0][1] = 1;
-        rings[0][2] = 4;
-        rings[1][0] = 1;
-    }
-
-    public boolean GetGoal(int index){
-        if (index < 0 || index > 11) {
-            throw new IllegalArgumentException("Index out of bounds");
+        for(int i = 0; i < 12; i++){
+            goalRing[i] = true;
         }
-        return goalRing[index];
-    }
-
-    public int GetRingNode(int ring, int index){
-        if (ring < 1 || ring > 3 || index < 0 || index > 11) {
-            throw new IllegalArgumentException("Index out of bounds");
-        }
-        return rings[ring][index];
     }
 
     @Override
@@ -34,21 +17,22 @@ class App extends JPanel {
         super.paintComponent(g2d);
         g2d.setColor(Color.BLUE);
         g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        int offsetx = 30;
-        int offsety = 30;
+        int centerX = 320;
+        int centerY = 240;
+        int offset = 30;
         for(int i = 0; i < 12; i++){
             if(goalRing[i] == true){
-                g2d.fillOval(i * offsetx, 0, 10, 10);
+                g2d.drawOval((int) Math.round((centerX + offset * 4 * Math.cos(i * Math.PI / 6))), (int)Math.round((centerY + offset * 4 * Math.sin(i * Math.PI / 6))), 10, 10);
             }
         }
-        for(int ring = 0; ring < 4; ring++){
+        for(int ring = 0; ring < 3; ring++){
             for(int i = 0; i < 12; i++){
                 if(rings[ring][i] == 1){
                     g2d.setColor(Color.RED);
-                   g2d.fillRect(i * offsetx, (ring + 1) * offsety, 5, 15); 
+                   g2d.fillRect(i * offset, (ring + 1) * offset, 5, 15); 
                 }else if(rings[ring][i] == 4){
                     g2d.setColor(Color.BLACK);
-                    g2d.fillRect(i * offsetx, (ring + 1) * offsety, 10, 10);
+                    g2d.fillRect(i * offset, (ring + 1) * offset, 10, 10);
                 }
             }
         }
