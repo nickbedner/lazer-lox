@@ -7,11 +7,17 @@ class App extends JPanel {
 
     public App() {
         for(int i = 0; i < 12; i++){
-            goalRing[i] = true;
+            if (i > 5)
+                goalRing[i] = true;
+            else
+                goalRing[i] = false;
         }
         for(int ring = 0; ring < 3; ring++){
             for(int i = 0; i < 12; i++){
-                rings[ring][i] = 4;
+                if (ring == 1 && i < 6)
+                    rings[ring][i] = 1;
+                else
+                    rings[ring][i] = 0;
             }
         }
     }
@@ -43,6 +49,51 @@ class App extends JPanel {
         }
     }
 
+    private boolean DoGoalCheck(){
+        int tot_goals = goalRing.length;
+        int goal_pts = 0;
+        for (int g = 0; g < goalRing.length; g++) {
+            if (goalRing[g]) {
+                boolean has_laser = false;
+                for (int r = rings.length - 1; r > -1; r--) {
+                    if (g < 6 && rings[r][g + 6] > 0) {
+                        int tmp = rings[r][g + 6];
+                        if (tmp == 1) {
+                            has_laser = true;
+                        }
+                        else if (has_laser && tmp == 4) {
+                           has_laser = false;
+                           break;
+                        }
+                    }
+                    if (g > 5 && rings[r][g - 6] > 0) {
+                        int tmp = rings[r][g - 6];
+                        if (tmp == 1) {
+                            has_laser = true;
+                        }
+                        else if (has_laser && tmp == 4) {
+                           has_laser = false;
+                           break;
+                        }
+                    }
+                }
+                if (has_laser) {
+                    for (int r = rings.length - 1; r > -1; r--) {
+                        if (rings[r][g] == 1 || rings[r][g] == 4) {
+                            has_laser = false;
+                            break;
+                        }
+                    }
+                    if (has_laser) goal_pts++;
+                }
+            }
+            else{
+                tot_goals--;
+            }
+        }
+        return goal_pts == tot_goals;
+    }
+
     public static void main(String[] args) throws Exception {
         JFrame frame = new JFrame("LazerLox");
 
@@ -50,5 +101,8 @@ class App extends JPanel {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(640, 480);
         frame.setVisible(true);
+
+        App app = new App();
+        System.out.println("Lasers Hit Goals? " + app.DoGoalCheck());
     }
 }
