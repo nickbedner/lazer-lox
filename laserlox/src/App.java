@@ -199,7 +199,7 @@ class App extends JPanel {
         // counterclockwise
         if (upPressed) {
             System.out.println("Shifting ring " + selected_ring + " counterclockwise");
-            int first = rings[selected_ring][0];
+            LoxNode first = rings[selected_ring][0];
             for (int i = 0; i < 11; i++)
                 rings[selected_ring][i] = rings[selected_ring][i + 1];
             rings[selected_ring][11] = first;
@@ -207,7 +207,7 @@ class App extends JPanel {
 
         if (downPressed) {
             System.out.println("Shifting ring " + selected_ring + " clockwise");
-            int last = rings[selected_ring][11];
+            LoxNode last = rings[selected_ring][11];
             for (int i = 11; i > 0; i--)
                 rings[selected_ring][i] = rings[selected_ring][i - 1];
             rings[selected_ring][0] = last;
@@ -218,6 +218,9 @@ class App extends JPanel {
         rightPressed = false;
         upPressed = false;
         downPressed = false;
+
+        //Check if Lasers meet goals
+        System.out.println("Lasers Hit Goals? " + DoGoalCheck());
     }
 
     @Override
@@ -301,13 +304,10 @@ class App extends JPanel {
 
     public static void main(String[] args) throws Exception {
         JFrame frame = new JFrame("LazerLox");
-
+        
         frame.add(new App());
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(640, 480);
         frame.setVisible(true);
-
-        //App app = new App();
-        //System.out.println("Lasers Hit Goals? " + app.DoGoalCheck());
     }
 }
