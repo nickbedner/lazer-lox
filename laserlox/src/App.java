@@ -13,6 +13,12 @@ class App extends JPanel {
     private boolean rightPressed = false;
     private boolean rightHeld = false;
 
+    private boolean upPressed = false;
+    private boolean upHeld = false;
+
+    private boolean downPressed = false;
+    private boolean downHeld = false;
+
     private int selected_ring = 0;
 
     // 60 FPS game loop
@@ -55,6 +61,60 @@ class App extends JPanel {
         // Action to perform from input
         ActionMap actionMap = getActionMap();
 
+        // UP pressed
+        inputMap.put(
+                KeyStroke.getKeyStroke("pressed UP"),
+                "upPressed");
+
+        actionMap.put("upPressed", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!upHeld)
+                    upPressed = true;
+
+                upHeld = true;
+            }
+        });
+
+        // UP released
+        inputMap.put(
+                KeyStroke.getKeyStroke("released UP"),
+                "upReleased");
+
+        actionMap.put("upReleased", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                upHeld = false;
+            }
+        });
+
+        // DOWN pressed
+        inputMap.put(
+                KeyStroke.getKeyStroke("pressed DOWN"),
+                "downPressed");
+
+        actionMap.put("downPressed", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!downHeld)
+                    downPressed = true;
+
+                downHeld = true;
+            }
+        });
+
+        // DOWN released
+        inputMap.put(
+                KeyStroke.getKeyStroke("released DOWN"),
+                "downReleased");
+
+        actionMap.put("downReleased", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                downHeld = false;
+            }
+        });
+
         // LEFT pressed
         inputMap.put(
                 KeyStroke.getKeyStroke("pressed LEFT"),
@@ -63,9 +123,8 @@ class App extends JPanel {
         actionMap.put("leftPressed", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (!leftHeld) {
+                if (!leftHeld)
                     leftPressed = true;
-                }
 
                 leftHeld = true;
             }
@@ -135,10 +194,29 @@ class App extends JPanel {
             selected_ring = (selected_ring + 1) % 3;
         }
 
-        // Other game logic goes here
-        // Clear "pressed" state at end of frame
+        // For up or down press, shift all the lasers in the selected ring clockwise or
+        // counterclockwise
+        if (upPressed) {
+            System.out.println("Shifting ring " + selected_ring + " counterclockwise");
+            int first = rings[selected_ring][0];
+            for (int i = 0; i < 11; i++)
+                rings[selected_ring][i] = rings[selected_ring][i + 1];
+            rings[selected_ring][11] = first;
+        }
+
+        if (downPressed) {
+            System.out.println("Shifting ring " + selected_ring + " clockwise");
+            int last = rings[selected_ring][11];
+            for (int i = 11; i > 0; i--)
+                rings[selected_ring][i] = rings[selected_ring][i - 1];
+            rings[selected_ring][0] = last;
+        }
+
+        // Clear pressed state at end of frame
         leftPressed = false;
         rightPressed = false;
+        upPressed = false;
+        downPressed = false;
     }
 
     @Override
