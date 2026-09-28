@@ -21,7 +21,7 @@ public class BlockerBasic implements LoxNode {
     }
 
     //For the weird Blocker Variants if we make any.
-    public BlockerBasic(int ring, int pos, int[] posAbsolute) {
+    public BlockerBasic(int ring, int pos, int[] posAbsolute, int type) {
         if (ring < 1 || ring > 3) {
             throw new IllegalArgumentException("There are 3 Player Rings, so the ring must be between 1 and 3.");
         } else{

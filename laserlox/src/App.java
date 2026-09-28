@@ -4,7 +4,7 @@ import java.awt.event.ActionEvent;
 
 class App extends JPanel {
     private final boolean[] goalRing = new boolean[12];
-    private final int[][] rings = new int[3][12];
+    private final LoxNode[][] rings = new LoxNode[3][12];
 
     // Input state
     private boolean leftPressed = false;
@@ -28,15 +28,16 @@ class App extends JPanel {
         }
         for (int ring = 0; ring < 3; ring++) {
             for (int i = 0; i < 12; i++) {
-                if (ring == 1 && i < 6)
-                    rings[ring][i] = 1;
+                if (ring == 0 && i < 6)
+                    rings[ring][i] = new LaserBasic(ring + 1, i, new int[]{0, 0}, 1);
+                else if (ring == 1 && i < 9 && i > 5)
+                    rings[ring][i] = new BlockerBasic(ring + 1, i, new int[]{0, 0}, 4);
+                else if (ring == 2 && i > 8)
+                    rings[ring][i] = new BlockerBasic(ring, i, new int[]{0, 0}, 4);
                 else
-                    rings[ring][i] = 0;
+                    rings[ring][i] = null;
             }
         }
-        rings[0][0] = 1;
-        rings[1][0] = 1;
-        rings[2][0] = 1;
 
         setupInput();
 
@@ -158,11 +159,11 @@ class App extends JPanel {
         }
         for (int ring = 0; ring < 3; ring++) {
             for (int i = 0; i < 12; i++) {
-                if (rings[ring][i] == 1) {
+                if (rings[ring][i] != null && rings[ring][i].GetType() == 1) {
                     g2d.setColor(Color.RED);
                     g2d.fillRect((int) Math.round((centerX + offset * (ring + 1) * Math.cos(i * Math.PI / 6))),
                             (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI / 6))), 5, 15);
-                } else if (rings[ring][i] == 4) {
+                } else if (rings[ring][i] != null && rings[ring][i].GetType() == 4) {
                     g2d.setColor(Color.BLACK);
                     g2d.fillRect((int) Math.round((centerX + offset * (ring + 1) * Math.cos(i * Math.PI / 6))),
                             (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI / 6))), 10, 10);
@@ -184,8 +185,8 @@ class App extends JPanel {
             if (goalRing[g]) {
                 boolean has_laser = false;
                 for (int r = rings.length - 1; r > -1; r--) {
-                    if (g < 6 && rings[r][g + 6] > 0) {
-                        int tmp = rings[r][g + 6];
+                    if (g < 6 && rings[r][g + 6] != null && rings[r][g + 6].GetType() > 0) {
+                        int tmp = rings[r][g + 6].GetType();
                         if (tmp == 1) {
                             has_laser = true;
                         } else if (has_laser && tmp == 4) {
@@ -193,8 +194,8 @@ class App extends JPanel {
                             break;
                         }
                     }
-                    if (g > 5 && rings[r][g - 6] > 0) {
-                        int tmp = rings[r][g - 6];
+                    if (g > 5 && rings[r][g - 6] != null && rings[r][g - 6].GetType() > 0) {
+                        int tmp = rings[r][g - 6].GetType();
                         if (tmp == 1) {
                             has_laser = true;
                         } else if (has_laser && tmp == 4) {
@@ -205,7 +206,7 @@ class App extends JPanel {
                 }
                 if (has_laser) {
                     for (int r = rings.length - 1; r > -1; r--) {
-                        if (rings[r][g] == 1 || rings[r][g] == 4) {
+                        if (rings[r][g] != null && (rings[r][g].GetType() == 1 || rings[r][g].GetType() == 4)) {
                             has_laser = false;
                             break;
                         }
@@ -228,7 +229,7 @@ class App extends JPanel {
         frame.setSize(640, 480);
         frame.setVisible(true);
 
-        App app = new App();
-        System.out.println("Lasers Hit Goals? " + app.DoGoalCheck());
+        //App app = new App();
+        //System.out.println("Lasers Hit Goals? " + app.DoGoalCheck());
     }
 }
