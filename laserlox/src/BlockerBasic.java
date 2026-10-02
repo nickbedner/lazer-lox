@@ -1,16 +1,19 @@
 public class BlockerBasic implements LoxNode {
     private int ring;
+    private boolean ring_on;
     private int pos;
     private int[] posAbsolute;
     private int type;
 
     //Quick and dirty simple blocker.
-    public BlockerBasic(int ring, int pos){
+    public BlockerBasic(int ring, boolean ring_on, int pos){
         if (ring < 1 || ring > 3) {
             throw new IllegalArgumentException("There are 3 Player Rings, so the ring must be between 1 and 3.");
         } else{
             this.ring = ring;
         }
+        this.ring_on = ring_on;
+
         if (pos < 0 || pos > 11) {
             throw new IllegalArgumentException("There are 12 slots in a ring, so the position must be between 0 and 11.");
         } else {
@@ -21,12 +24,14 @@ public class BlockerBasic implements LoxNode {
     }
 
     //For the weird Blocker Variants if we make any.
-    public BlockerBasic(int ring, int pos, int[] posAbsolute, int type) {
+    public BlockerBasic(int ring, boolean ring_on, int pos, int[] posAbsolute, int type) {
         if (ring < 1 || ring > 3) {
             throw new IllegalArgumentException("There are 3 Player Rings, so the ring must be between 1 and 3.");
         } else{
             this.ring = ring;
         }
+        this.ring_on = ring_on;
+
         if (pos < 0 || pos > 11) {
             throw new IllegalArgumentException("There are 12 slots in a ring, so the position must be between 0 and 11.");
         } else {
@@ -40,10 +45,22 @@ public class BlockerBasic implements LoxNode {
         }
     }
 
+    //Toggle the on/off state of the Blocker.
+    @Override
+    public void Toggle() {
+        this.ring_on = !this.ring_on;
+    }
+
     //Get the Ring the Blocker is in.
     @Override
     public int GetRing() {
         return ring;
+    }
+
+    //Get whether the Blocker is on.
+    @Override
+    public boolean IsOn() {
+        return this.ring_on;
     }
 
     //Get the Ring Position the Blocker is in.

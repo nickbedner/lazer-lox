@@ -1,11 +1,12 @@
 public class LaserBasic implements LoxNode {
     private int ring;
+    private boolean ring_on;
     private int pos;
     private int[] posAbsolute;
     private int type;
 
     //Quick and dirty simple laser.
-    public LaserBasic(int ring, int pos){
+    public LaserBasic(int ring, boolean ring_on, int pos){
         if (ring < 1 || ring > 3) {
             throw new IllegalArgumentException("There are 3 Player Rings, so the ring must be between 1 and 3.");
         } else{
@@ -16,17 +17,20 @@ public class LaserBasic implements LoxNode {
         } else {
             this.pos = pos;
         }
+        this.ring_on = ring_on;
         this.posAbsolute = new int[]{0,0};
         this.type = 1;
     }
 
     //For the weird Laser Variants if we make any.
-    public LaserBasic(int ring, int pos, int[] posAbsolute, int type) {
+    public LaserBasic(int ring, boolean ring_on, int pos, int[] posAbsolute, int type) {
         if (ring < 1 || ring > 3) {
             throw new IllegalArgumentException("There are 3 Player Rings, so the ring must be between 1 and 3.");
         } else{
             this.ring = ring;
         }
+        this.ring_on = ring_on;
+
         if (pos < 0 || pos > 11) {
             throw new IllegalArgumentException("There are 12 slots in a ring, so the position must be between 0 and 11.");
         } else {
@@ -40,12 +44,24 @@ public class LaserBasic implements LoxNode {
         }
     }
 
+    //Toggle the on/off state of the Laser.
+    @Override
+    public void Toggle() {
+        ring_on = !ring_on;
+    }
+
     //Get the Ring the Laser is in.
     @Override
     public int GetRing() {
         return ring;
     }
 
+    //Get whether the Laser is on.
+    @Override 
+    public boolean IsOn() {
+        return ring_on;
+    }
+    
     //Get the Ring Position the Laser is in.
     @Override
     public int GetPos() {

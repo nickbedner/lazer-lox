@@ -35,11 +35,11 @@ class App extends JPanel {
         for (int ring = 0; ring < 3; ring++) {
             for (int i = 0; i < 12; i++) {
                 if (ring == 0 && i < 6)
-                    rings[ring][i] = new LaserBasic(ring + 1, i, new int[]{0, 0}, 1);
+                    rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[]{0, 0}, 1);
                 else if (ring == 1 && i < 9 && i > 5)
-                    rings[ring][i] = new BlockerBasic(ring + 1, i, new int[]{0, 0}, 4);
+                    rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[]{0, 0}, 4);
                 else if (ring == 2 && i > 8)
-                    rings[ring][i] = new BlockerBasic(ring, i, new int[]{0, 0}, 4);
+                    rings[ring][i] = new BlockerBasic(ring, true, i, new int[]{0, 0}, 4);
                 else
                     rings[ring][i] = null;
             }
@@ -258,23 +258,37 @@ class App extends JPanel {
         int diameter = radius * 2;
         g2d.drawOval(centerX - radius, centerY - radius, diameter, diameter);
     }
-
+    //Returns true if there is a laser node facing a goal point with nothing blocking it
     private boolean DoGoalCheck() {
-        int tot_goals = goalRing.length;
-        int goal_pts = 0;
+        int tot_goals = goalRing.length;            //Effectively 12
+        int goal_pts = 0;                           //How many goals in the puzzle
+                                                    //Note that a puzzle cannot have more than 6 goals, nor more goals
+                                                    //than lasers if it is to be possible.
+        //Loop through the Goal Ring
         for (int g = 0; g < goalRing.length; g++) {
+            //Find if a goal is on
             if (goalRing[g]) {
+                //Assume there is no laser by default
                 boolean has_laser = false;
+                //Go through all three player rings
                 for (int r = rings.length - 1; r > -1; r--) {
+                    //If the goal is within the first 6 slots, we check the slot 6 spaces away on each
+                    //player ring. This grabs the nodes facing the goal.
                     if (g < 6 && rings[r][g + 6] != null && rings[r][g + 6].GetType() > 0) {
                         int tmp = rings[r][g + 6].GetType();
+                        //Check that a laser is on one of the player rings. 
                         if (tmp == 1) {
                             has_laser = true;
+                        //Only state that there is no laser if a laser if a laser was found prior to a
+                        //blocker. Note we work back to front since a laser blocking another laser on
+                        //this side of the ring does not actually stop the goal from being hit
                         } else if (has_laser && tmp == 4) {
                             has_laser = false;
                             break;
                         }
                     }
+                    //This is the same code as above, but we subtract 6 to get the opposite slot of the back of
+                    //the goal ring.
                     if (g > 5 && rings[r][g - 6] != null && rings[r][g - 6].GetType() > 0) {
                         int tmp = rings[r][g - 6].GetType();
                         if (tmp == 1) {
@@ -285,20 +299,31 @@ class App extends JPanel {
                         }
                     }
                 }
+                //If a laser was not blocked in the opposite side, now check in front of the goal.
                 if (has_laser) {
+                    //Go through each player ring in the slot directly in front of the goal
                     for (int r = rings.length - 1; r > -1; r--) {
-                        if (rings[r][g] != null && (rings[r][g].GetType() == 1 || rings[r][g].GetType() == 4)) {
+                        //If there is anything in front of the goal, save a theoretical tunnel or portal,
+                        //the goal is blocked. Lasers block other lasers on this side of the ring.
+                        if (rings[r][g] != null && rings[r][g].GetType() > 0 &&  rings[r][g].GetType() < 5) {
                             has_laser = false;
                             break;
                         }
                     }
+                    //If nothing was blocked, the goal is hit and we add 1 to the goal points. We need goal points
+                    //to match with total goals to know if we won.
                     if (has_laser)
                         goal_pts++;
                 }
             } else {
+                //Everytime a goal is off, reduce the total goals by 1.
                 tot_goals--;
             }
         }
+        //If there are no goals, then the level is impossible.
+        if (tot_goals == 0) return false;
+        
+        //If the goals hit matches the total number of goals, the level is won.
         return goal_pts == tot_goals;
     }
 
