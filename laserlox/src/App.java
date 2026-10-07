@@ -1,6 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import javax.imageio.ImageIO;
+
 
 class App extends JPanel {
     private final boolean[] goalRing = new boolean[12];
@@ -24,6 +28,12 @@ class App extends JPanel {
     // 60 FPS game loop
     private static final int FPS = 60;
     private static final int FRAME_TIME = 1000 / FPS;
+
+    // Sprite Info
+    private final static String sprPath = "lazer-lox\\laserlox\\Sprite pngs";
+    private static BufferedImage laserSprite;
+    private static BufferedImage blockerSprite;
+    private static BufferedImage goalSprite;
 
     public App() {
         for (int i = 0; i < 12; i++) {
@@ -234,20 +244,29 @@ class App extends JPanel {
         int offset = 40;
         for (int i = 0; i < 12; i++) {
             if (goalRing[i] == true) {
-                g2d.drawOval((int) Math.round((centerX + offset * 5 * Math.cos(i * Math.PI / 6))),
-                        (int) Math.round((centerY + offset * 5 * Math.sin(i * Math.PI / 6))), 10, 10);
+                //g2d.drawOval((int) Math.round((centerX + offset * 5 * Math.cos(i * Math.PI / 6))),
+                //        (int) Math.round((centerY + offset * 5 * Math.sin(i * Math.PI / 6))), 10, 10);
+                g2d.drawImage(goalSprite, (int) Math.round((centerX + offset * 5 * Math.cos(i * Math.PI / 6))),
+                        (int) Math.round((centerY + offset * 5 * Math.sin(i * Math.PI / 6))), 32, 32, null);
             }
         }
         for (int ring = 0; ring < 3; ring++) {
             for (int i = 0; i < 12; i++) {
                 if (rings[ring][i] != null && rings[ring][i].GetType() == 1) {
-                    g2d.setColor(Color.RED);
+                    /*g2d.setColor(Color.RED);
                     g2d.fillRect((int) Math.round((centerX + offset * (ring + 1) * Math.cos(i * Math.PI / 6))),
                             (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI / 6))), 5, 15);
+                    */
+                    g2d.drawImage(laserSprite, (int) Math.round((centerX + offset * (ring + 1) * Math.cos(i * Math.PI / 6))),
+                            (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI / 6))), 32, 32, null);
+                    
                 } else if (rings[ring][i] != null && rings[ring][i].GetType() == 4) {
-                    g2d.setColor(Color.BLACK);
+                    /*g2d.setColor(Color.BLACK);
                     g2d.fillRect((int) Math.round((centerX + offset * (ring + 1) * Math.cos(i * Math.PI / 6))),
                             (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI / 6))), 10, 10);
+                    */
+                    g2d.drawImage(blockerSprite, (int) Math.round((centerX + offset * (ring + 1) * Math.cos(i * Math.PI / 6))),
+                            (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI / 6))), 32, 32, null);
                 }
             }
         }
@@ -328,6 +347,10 @@ class App extends JPanel {
     }
 
     public static void main(String[] args) throws Exception {
+        goalSprite = ImageIO.read(new File(sprPath + "\\Goal.png"));
+        laserSprite = ImageIO.read(new File(sprPath + "\\lasperPointer.png"));
+        blockerSprite = ImageIO.read(new File(sprPath + "\\Blocker.png"));
+        
         JFrame frame = new JFrame("LazerLox");
         
         frame.add(new App());

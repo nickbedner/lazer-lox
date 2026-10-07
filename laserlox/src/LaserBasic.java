@@ -80,4 +80,9 @@ public class LaserBasic implements LoxNode {
     public int GetType() {
         return type;
     }
+
+    @Override
+    public void SetAbsolutePosition(int[] newPosition) {
+        this.posAbsolute = newPosition;
+    }
 }
