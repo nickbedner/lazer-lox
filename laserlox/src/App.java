@@ -37,7 +37,7 @@ class App extends JPanel {
 
     public App() {
         for (int i = 0; i < 12; i++) {
-            if (i > 5)
+            if (i > -1)
                 goalRing[i] = true;
             else
                 goalRing[i] = false;
@@ -207,7 +207,7 @@ class App extends JPanel {
 
         // For up or down press, shift all the lasers in the selected ring clockwise or
         // counterclockwise
-        if (rightPressed) {
+        if (leftPressed) {
             System.out.println("Shifting ring " + selected_ring + " counterclockwise");
             LoxNode first = rings[selected_ring][0];
             for (int i = 0; i < 11; i++)
@@ -215,7 +215,7 @@ class App extends JPanel {
             rings[selected_ring][11] = first;
         }
 
-        if (leftPressed) {
+        if (rightPressed) {
             System.out.println("Shifting ring " + selected_ring + " clockwise");
             LoxNode last = rings[selected_ring][11];
             for (int i = 11; i > 0; i--)
@@ -237,6 +237,10 @@ class App extends JPanel {
     protected void paintComponent(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         super.paintComponent(g2d);
+        //Setting BG Color
+        g2d.setColor(new Color(61, 88, 179));
+        g2d.fillRect(0, 0, getWidth(), getHeight());
+
         g2d.setColor(Color.BLUE);
         g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         int centerX = 320;      //Horizontal center of window
@@ -247,8 +251,9 @@ class App extends JPanel {
             if (goalRing[i] == true) {
                 //g2d.drawOval((int) Math.round((centerX + offset * 5 * Math.cos(i * Math.PI / 6))),
                 //        (int) Math.round((centerY + offset * 5 * Math.sin(i * Math.PI / 6))), 10, 10);
-                g2d.drawImage(goalSprite, (int) Math.round((centerX + ring_spcr * 5 * Math.cos(i * Math.PI / 6)) - offset/2),
-                        (int) Math.round((centerY + ring_spcr * 5 * Math.sin(i * Math.PI / 6)) - offset/2), 32, 32, null);
+                int ring_mult = 4;      //Increases distance from other rings
+                g2d.drawImage(goalSprite, (int) Math.round((centerX + ring_spcr * ring_mult * Math.cos(i * Math.PI / 6)) - offset/2),
+                        (int) Math.round((centerY + ring_spcr * ring_mult * Math.sin(i * Math.PI / 6)) - offset/2), 32, 32, null);
             }
         }
         for (int ring = 0; ring < 3; ring++) {
