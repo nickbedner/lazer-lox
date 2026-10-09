@@ -1,6 +1,10 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import javax.imageio.ImageIO;
+
 
 class App extends JPanel {
     private final boolean[] goalRing = new boolean[12];
@@ -25,9 +29,15 @@ class App extends JPanel {
     private static final int FPS = 60;
     private static final int FRAME_TIME = 1000 / FPS;
 
+    // Sprite Info
+    private final static String sprPath = "lazer-lox\\laserlox\\Sprite pngs";
+    private static BufferedImage laserSprite;
+    private static BufferedImage blockerSprite;
+    private static BufferedImage goalSprite;
+
     public App() {
         for (int i = 0; i < 12; i++) {
-            if (i > 5)
+            if (i > -1)
                 goalRing[i] = true;
             else
                 goalRing[i] = false;
@@ -185,19 +195,19 @@ class App extends JPanel {
     }
 
     private void updateGame() {
-        if (leftPressed) {
+        if (downPressed) {
             System.out.println("Moving down a ring: " + selected_ring);
             selected_ring = (selected_ring - 1 + 3) % 3;
         }
 
-        if (rightPressed) {
+        if (upPressed) {
             System.out.println("Moving up a ring: " + selected_ring);
             selected_ring = (selected_ring + 1) % 3;
         }
 
         // For up or down press, shift all the lasers in the selected ring clockwise or
         // counterclockwise
-        if (upPressed) {
+        if (leftPressed) {
             System.out.println("Shifting ring " + selected_ring + " counterclockwise");
             LoxNode first = rings[selected_ring][0];
             for (int i = 0; i < 11; i++)
@@ -205,7 +215,7 @@ class App extends JPanel {
             rings[selected_ring][11] = first;
         }
 
-        if (downPressed) {
+        if (rightPressed) {
             System.out.println("Shifting ring " + selected_ring + " clockwise");
             LoxNode last = rings[selected_ring][11];
             for (int i = 11; i > 0; i--)
@@ -227,34 +237,49 @@ class App extends JPanel {
     protected void paintComponent(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         super.paintComponent(g2d);
+        //Setting BG Color
+        g2d.setColor(new Color(61, 88, 179));
+        g2d.fillRect(0, 0, getWidth(), getHeight());
+
         g2d.setColor(Color.BLUE);
         g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        int centerX = 320;
-        int centerY = 210;
-        int offset = 40;
+        int centerX = 320;      //Horizontal center of window
+        int centerY = 210;      //Vertical center of window
+        int ring_spcr = 40;     //distance between rings
+        int offset = 32;        //literal sprite offset
         for (int i = 0; i < 12; i++) {
             if (goalRing[i] == true) {
-                g2d.drawOval((int) Math.round((centerX + offset * 5 * Math.cos(i * Math.PI / 6))),
-                        (int) Math.round((centerY + offset * 5 * Math.sin(i * Math.PI / 6))), 10, 10);
+                //g2d.drawOval((int) Math.round((centerX + offset * 5 * Math.cos(i * Math.PI / 6))),
+                //        (int) Math.round((centerY + offset * 5 * Math.sin(i * Math.PI / 6))), 10, 10);
+                int ring_mult = 4;      //Increases distance from other rings
+                g2d.drawImage(goalSprite, (int) Math.round((centerX + ring_spcr * ring_mult * Math.cos(i * Math.PI / 6)) - offset/2),
+                        (int) Math.round((centerY + ring_spcr * ring_mult * Math.sin(i * Math.PI / 6)) - offset/2), 32, 32, null);
             }
         }
         for (int ring = 0; ring < 3; ring++) {
             for (int i = 0; i < 12; i++) {
                 if (rings[ring][i] != null && rings[ring][i].GetType() == 1) {
-                    g2d.setColor(Color.RED);
+                    /*g2d.setColor(Color.RED);
                     g2d.fillRect((int) Math.round((centerX + offset * (ring + 1) * Math.cos(i * Math.PI / 6))),
                             (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI / 6))), 5, 15);
+                    */
+                    g2d.drawImage(laserSprite, (int) Math.round((centerX + ring_spcr * (ring + 1) * Math.cos(i * Math.PI / 6)) - offset/2),
+                            (int) Math.round((centerY + ring_spcr * (ring + 1) * Math.sin(i * Math.PI / 6)) - offset/2), 32, 32, null);
+                    
                 } else if (rings[ring][i] != null && rings[ring][i].GetType() == 4) {
-                    g2d.setColor(Color.BLACK);
+                    /*g2d.setColor(Color.BLACK);
                     g2d.fillRect((int) Math.round((centerX + offset * (ring + 1) * Math.cos(i * Math.PI / 6))),
                             (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI / 6))), 10, 10);
+                    */
+                    g2d.drawImage(blockerSprite, (int) Math.round((centerX + ring_spcr * (ring + 1) * Math.cos(i * Math.PI / 6)) - offset/2),
+                            (int) Math.round((centerY + ring_spcr * (ring + 1) * Math.sin(i * Math.PI / 6)) - offset/2), 32, 32, null);
                 }
             }
         }
 
         // Make it so it draws a circle around the selected ring
         g2d.setColor(Color.GREEN);
-        int radius = offset * (selected_ring + 1);
+        int radius = ring_spcr * (selected_ring + 1);
         int diameter = radius * 2;
         g2d.drawOval(centerX - radius, centerY - radius, diameter, diameter);
     }
@@ -328,6 +353,10 @@ class App extends JPanel {
     }
 
     public static void main(String[] args) throws Exception {
+        goalSprite = ImageIO.read(new File(sprPath + "\\Goal.png"));
+        laserSprite = ImageIO.read(new File(sprPath + "\\lasperPointer.png"));
+        blockerSprite = ImageIO.read(new File(sprPath + "\\Blocker.png"));
+        
         JFrame frame = new JFrame("LazerLox");
         
         frame.add(new App());
