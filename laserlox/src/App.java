@@ -9,6 +9,8 @@ import javax.imageio.ImageIO;
 class App extends JPanel {
     private final boolean[] goalRing = new boolean[12];
     private final LoxNode[][] rings = new LoxNode[3][12];
+    private String currentLevel = "Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00";
+    private boolean levelLoaded = false;
 
     // Input state
     private boolean leftPressed = false;
@@ -36,22 +38,28 @@ class App extends JPanel {
     private static BufferedImage goalSprite;
 
     public App() {
-        for (int i = 0; i < 12; i++) {
-            if (i > -1)
-                goalRing[i] = true;
-            else
-                goalRing[i] = false;
-        }
-        for (int ring = 0; ring < 3; ring++) {
+        if (!levelLoaded) {
+            LevelLoader levelLoader = new LevelLoader();
+            currentLevel = levelLoader.GetCurrentLevel();
+            levelLoaded = true;
+
             for (int i = 0; i < 12; i++) {
-                if (ring == 0 && i < 6)
-                    rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[]{0, 0}, 1);
-                else if (ring == 1 && i < 9 && i > 5)
-                    rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[]{0, 0}, 4);
-                else if (ring == 2 && i > 8)
-                    rings[ring][i] = new BlockerBasic(ring, true, i, new int[]{0, 0}, 4);
+                if (i > -1)
+                    goalRing[i] = true;
                 else
-                    rings[ring][i] = null;
+                    goalRing[i] = false;
+            }
+            for (int ring = 0; ring < 3; ring++) {
+                for (int i = 0; i < 12; i++) {
+                    if (ring == 0 && i < 6)
+                        rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[]{0, 0}, 1);
+                    else if (ring == 1 && i < 9 && i > 5)
+                        rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[]{0, 0}, 4);
+                    else if (ring == 2 && i > 8)
+                        rings[ring][i] = new BlockerBasic(ring, true, i, new int[]{0, 0}, 4);
+                    else
+                        rings[ring][i] = null;
+                }
             }
         }
 
@@ -356,7 +364,7 @@ class App extends JPanel {
         goalSprite = ImageIO.read(new File(sprPath + "\\Goal.png"));
         laserSprite = ImageIO.read(new File(sprPath + "\\lasperPointer.png"));
         blockerSprite = ImageIO.read(new File(sprPath + "\\Blocker.png"));
-        
+
         JFrame frame = new JFrame("LazerLox");
         
         frame.add(new App());
