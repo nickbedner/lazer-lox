@@ -243,10 +243,10 @@ class App extends JPanel {
 
         g2d.setColor(Color.BLUE);
         g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        int centerX = 320;      //Horizontal center of window
-        int centerY = 210;      //Vertical center of window
-        int ring_spcr = 40;     //distance between rings
-        int offset = 32;        //literal sprite offset
+        int centerX = getWidth()/2;      //Horizontal center of window
+        int centerY = getHeight()/2;     //Vertical center of window
+        int ring_spcr = 40;              //distance between rings
+        int offset = 32;                 //literal sprite offset
         for (int i = 0; i < 12; i++) {
             if (goalRing[i] == true) {
                 //g2d.drawOval((int) Math.round((centerX + offset * 5 * Math.cos(i * Math.PI / 6))),
