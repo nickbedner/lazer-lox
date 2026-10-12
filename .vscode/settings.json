@@ -1,0 +1,14 @@
+{
+    "java.project.sourcePaths": [
+        "src"
+    ],
+    "java.project.outputPath": "bin",
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar"
+    ],
+    "java.debug.settings.enableRunDebugCodeLens": true,
+    "code-runner.showRunIconInEditorTitleMenu": false,
+    "code-runner.executorMap": {
+        "java": "cd $dir && mkdir -p ../bin && javac -d ../bin *.java && java -cp ../bin $fileNameWithoutExt"
+    }
+}
