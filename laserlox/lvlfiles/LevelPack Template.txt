@@ -1,0 +1,9 @@
+"Name"|"Author"|GGGGGGGGGGGG|XXXXXXXXXXXX|YYYYYYYYYYYY|ZZZZZZZZZZZZ|AB
+"Name" - Name of the Level, limit to 32 characters
+"Author" - Username of level-maker, limit to 32 characters
+"G" - Goal Ring, every 'G' can be 1 or 0. 1- goal, 0- no goal
+"X" - Outermost Player Ring, every 'X' can be 0- nothing, 1- Laser(basic), 2- Laser(2-Dir), 3- Laser(Mega), 4- Blocker, 5- Tunnel, 6- Portal
+"Y" - Middle Player Ring, follows same format as above.
+"Z" - Innermost Player Ring, follows same format as above.
+"A" - Ring Toggling, 1- Player's can toggle Rings, 0- Players cannot toggle Rings
+"B" - Ring Carrying, 1- Player's will move any nodes in the 12 Oclock position up to the next ring when moving between rings, 0- they can't

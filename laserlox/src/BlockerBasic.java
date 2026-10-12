@@ -82,4 +82,8 @@ public class BlockerBasic implements LoxNode {
         return type;
     }
 
+    @Override
+    public void SetAbsolutePosition(int[] newPosition) {
+        this.posAbsolute = newPosition;
+    }
 }
