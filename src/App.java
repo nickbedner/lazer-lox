@@ -8,6 +8,8 @@ import javax.imageio.ImageIO;
 class App extends JPanel {
     private final boolean[] goalRing = new boolean[12];
     private final LoxNode[][] rings = new LoxNode[3][12];
+    private String currentLevel = "Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00";
+    private boolean levelLoaded = false;
 
     // Input state
     private boolean leftPressed = false;
@@ -35,23 +37,36 @@ class App extends JPanel {
     private static BufferedImage goalSprite;
 
     public App() {
-        for (int i = 0; i < 12; i++) {
-            if (i > -1)
-                goalRing[i] = true;
-            else
-                goalRing[i] = false;
-        }
-        for (int ring = 0; ring < 3; ring++) {
-            for (int i = 0; i < 12; i++) {
-                if (ring == 0 && i < 6)
-                    rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[] { 0, 0 }, 1);
-                else if (ring == 1 && i < 9 && i > 5)
-                    rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[] { 0, 0 }, 4);
-                else if (ring == 2 && i > 8)
-                    rings[ring][i] = new BlockerBasic(ring, true, i, new int[] { 0, 0 }, 4);
-                else
-                    rings[ring][i] = null;
+        LevelLoader levelLoader = new LevelLoader();
+        if (!levelLoaded && currentLevel != null && !currentLevel.isEmpty()) {
+            if (levelLoader.LoadLevel(0)) {
+                currentLevel = levelLoader.GetCurrentLevel();
             }
+
+            String[] levelParts = currentLevel.split("\\|");
+
+            for (int i = 0; i < 12; i++) {
+                if (levelParts[2].charAt(i) == '1')
+                    goalRing[i] = true;
+                else
+                    goalRing[i] = false;
+            }
+            for (int ring = 0; ring < 3; ring++) {
+                for (int i = 0; i < 12; i++) {
+                    if (i >= levelParts[ring + 3].length() || levelParts[ring + 3].charAt(i) == '0') {
+                        rings[ring][i] = null;
+                    }
+                    else{
+                        char nodeType = levelParts[ring + 3].charAt(i);
+                        //NO ELSE YET TO KEEP TRACK OF WHAT TYPES OF NODES ARE CURRENTLY ADDED
+                        if (nodeType == '1' || nodeType == '2' || nodeType == '3')
+                            rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[]{0, 0}, 1);
+                        else if (nodeType == '4' || nodeType == '5' || nodeType == '6')
+                            rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[]{0, 0}, 4);
+                    }
+                }
+            }
+            levelLoaded = true;
         }
 
         setupInput();
