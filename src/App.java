@@ -10,8 +10,8 @@ class App extends JPanel {
     private final boolean[] goalRing = new boolean[12];
     private final LoxNode[][] rings = new LoxNode[3][12];
     private String currentLevel = "Win Test|Efrice|0000101101|11|4|110000001101|00";
-    //"Win Test|Efrice|0000101101|11|4|110000001101|00"
-    //"Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00"
+    // "Win Test|Efrice|0000101101|11|4|110000001101|00"
+    // "Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00"
     private boolean levelLoaded = false;
 
     // Level Win Check Info
@@ -44,6 +44,8 @@ class App extends JPanel {
     private static BufferedImage blockerSprite;
     private static BufferedImage goalSprite;
 
+    private static final double LASER_SPRITE_FORWARD_ANGLE = Math.PI / 2;
+
     public App() {
         LevelLoader levelLoader = new LevelLoader();
         if (!levelLoaded) {
@@ -54,48 +56,46 @@ class App extends JPanel {
             String[] levelParts = currentLevel.split("\\|");
 
             for (int i = 0; i < 12; i++) {
-                if (i < levelParts[2].length() && levelParts[2].charAt(i) == '1'){
+                if (i < levelParts[2].length() && levelParts[2].charAt(i) == '1') {
                     goalRing[i] = true;
-                }
-                else
+                } else
                     goalRing[i] = false;
             }
             for (int ring = 0; ring < 3; ring++) {
                 for (int i = 0; i < 12; i++) {
                     if (i >= levelParts[ring + 3].length() || levelParts[ring + 3].charAt(i) == '0') {
                         rings[ring][i] = null;
-                    }
-                    else{
+                    } else {
                         char nodeType = levelParts[ring + 3].charAt(i);
-                        switch(nodeType){
-                            //Regular Laser
+                        switch (nodeType) {
+                            // Regular Laser
                             case '1':
-                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[]{0, 0}, 1);
+                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[] { 0, 0 }, 1);
                                 break;
-                            //Double-Sided Laser
+                            // Double-Sided Laser
                             case '2':
-                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[]{0, 0}, 2);
+                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[] { 0, 0 }, 2);
                                 break;
-                            //Mega Laser
+                            // Mega Laser
                             case '3':
-                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[]{0, 0}, 3);
+                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[] { 0, 0 }, 3);
                                 megaLaser = true;
                                 break;
-                            //Regular Blocker
+                            // Regular Blocker
                             case '4':
-                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[]{0, 0}, 4);
+                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[] { 0, 0 }, 4);
                                 break;
-                            //Tunnel
+                            // Tunnel
                             case '5':
-                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[]{0, 0}, 5);
+                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[] { 0, 0 }, 5);
                                 tunnelCount++;
                                 break;
-                            //Portal
+                            // Portal
                             case '6':
-                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[]{0, 0}, 6);
+                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[] { 0, 0 }, 6);
                                 portalPuzzle = true;
                                 break;
-                            //Unknown Node means just put nothing
+                            // Unknown Node means just put nothing
                             default:
                                 System.out.println("Unknown node type: " + nodeType);
                                 rings[ring][i] = null;
@@ -322,12 +322,40 @@ class App extends JPanel {
                      * (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI /
                      * 6))), 5, 15);
                      */
-                    g2d.drawImage(laserSprite,
-                            (int) Math
-                                    .round((centerX + ring_spcr * (ring + 1) * Math.cos(i * Math.PI / 6)) - offset / 2),
-                            (int) Math
-                                    .round((centerY + ring_spcr * (ring + 1) * Math.sin(i * Math.PI / 6)) - offset / 2),
-                            32, 32, null);
+                    int type = rings[ring][i].GetType();
+
+                    // Position of the laser
+                    double angle = i * Math.PI / 6.0;
+
+                    double laserX = centerX + ring_spcr * (ring + 1) * Math.cos(angle);
+                    double laserY = centerY + ring_spcr * (ring + 1) * Math.sin(angle);
+
+                    // Determine which goal direction to face
+                    int targetSlot = (i + 6) % 12;
+
+                    if (type == 2 && goalRing[i]) {
+                        targetSlot = i;
+                    }
+
+                    double targetAngle = targetSlot * Math.PI / 6.0;
+
+                    double targetX = centerX + ring_spcr * 4 * Math.cos(targetAngle);
+                    double targetY = centerY + ring_spcr * 4 * Math.sin(targetAngle);
+
+                    // Calculate rotation toward goal
+                    double rotation = Math.atan2(
+                            targetY - laserY,
+                            targetX - laserX);
+
+                    // Draw rotated laser
+                    Graphics2D rotated = (Graphics2D) g2d.create();
+
+                    rotated.translate(laserX, laserY);
+                    rotated.rotate(rotation - LASER_SPRITE_FORWARD_ANGLE);
+
+                    rotated.drawImage(laserSprite, -16, -16, 32, 32, null);
+
+                    rotated.dispose();
 
                 } else if (rings[ring][i] != null && rings[ring][i].GetType() == 4) {
                     /*
@@ -358,74 +386,75 @@ class App extends JPanel {
     // blocking it
     private boolean DoGoalCheck() {
         boolean hitGoal = false;
-        boolean canMega = megaLaser;    //If a mega laser exists, we can ignore 1 blocking node
-        boolean needMega = false;       //If a blocking node was found, we need to find a mega laser
-                                        //All lasers are blocking nodes so any other laser being found
-                                        //first immediately ends the check as a fail 
-        //Loop through the Goal Ring
+        boolean canMega = megaLaser; // If a mega laser exists, we can ignore 1 blocking node
+        boolean needMega = false; // If a blocking node was found, we need to find a mega laser
+                                  // All lasers are blocking nodes so any other laser being found
+                                  // first immediately ends the check as a fail
+        // Loop through the Goal Ring
         for (int g = 0; g < goalRing.length; g++) {
-            if (goalRing[g]){
+            if (goalRing[g]) {
                 hitGoal = false;
                 boolean hasLaser = false;
-                for (int r = rings.length - 1; r > -1; r--){
-                    if (rings[r][g] != null && rings[r][g].GetType() > 0){
+                for (int r = rings.length - 1; r > -1; r--) {
+                    if (rings[r][g] != null && rings[r][g].GetType() > 0) {
                         int tmp = rings[r][g].GetType();
-                        //Double-sided laser with nothing blocking it
-                        if (!needMega && tmp == 2){
+                        // Double-sided laser with nothing blocking it
+                        if (!needMega && tmp == 2) {
                             System.out.println("Double-Sided Laser found at goal " + g + ", goal is hit.");
                             hasLaser = true;
                             hitGoal = true;
                             break;
                         }
-                        //First blocking node found
-                        else if (canMega && tmp > 0 && tmp != 5){
+                        // First blocking node found
+                        else if (canMega && tmp > 0 && tmp != 5) {
                             canMega = false;
                             needMega = true;
                         }
-                        //Additional blocking node found, goal is blocked
-                        else if (!canMega && tmp > 0 && tmp != 5){
+                        // Additional blocking node found, goal is blocked
+                        else if (!canMega && tmp > 0 && tmp != 5) {
                             System.out.println("Too many obstacles at goal " + g + ", goal is blocked.");
                             needMega = false;
                             return false;
                         }
                     }
                 }
-                if (g < goalRing.length && !hasLaser){
-                    for (int r = 0; r < rings.length; r++){
-                        //Checking nodes on the opposite side of the same ring as the goal.
+                if (g < goalRing.length && !hasLaser) {
+                    for (int r = 0; r < rings.length; r++) {
+                        // Checking nodes on the opposite side of the same ring as the goal.
                         int offset = g + 6;
-                        if (offset > 11) offset -= 12; 
-                        if (rings[r][offset] != null && rings[r][offset].GetType() > 0){
+                        if (offset > 11)
+                            offset -= 12;
+                        if (rings[r][offset] != null && rings[r][offset].GetType() > 0) {
                             int tmp = rings[r][offset].GetType();
-                            if (!hasLaser && tmp < 4){
-                                //Laser found with nothing blocking it
-                                if (!needMega){
+                            if (!hasLaser && tmp < 4) {
+                                // Laser found with nothing blocking it
+                                if (!needMega) {
                                     System.out.println("Laser found at goal " + g + ", goal is hit.");
                                     hasLaser = true;
                                     hitGoal = true;
                                     break;
                                 }
-                                //There is one blocking node between this mega laser and the goal
-                                else if (tmp == 3){
+                                // There is one blocking node between this mega laser and the goal
+                                else if (tmp == 3) {
                                     System.out.println("Mega Laser found at goal " + g + ", goal is hit.");
                                     hasLaser = true;
                                     needMega = false;
                                     hitGoal = true;
                                     break;
                                 }
-                                //there is one blocking node between this laser and the goal 
-                                else{
+                                // there is one blocking node between this laser and the goal
+                                else {
                                     System.out.println("Too many obstacles at goal " + g + ", goal is blocked.");
                                     needMega = false;
                                     return false;
                                 }
                             }
-                            //The first blocking node was hit. We now need the laser to be a mega laser
-                            else if (canMega && tmp > 0 && tmp != 5){
+                            // The first blocking node was hit. We now need the laser to be a mega laser
+                            else if (canMega && tmp > 0 && tmp != 5) {
                                 canMega = false;
                             }
-                            //Another blocking node was found, goal is blocked
-                            else if (!canMega && tmp > 0 && tmp != 5){
+                            // Another blocking node was found, goal is blocked
+                            else if (!canMega && tmp > 0 && tmp != 5) {
                                 System.out.println("Too many obstacles at goal " + g + ", goal is blocked.");
                                 needMega = false;
                                 return false;
@@ -433,7 +462,7 @@ class App extends JPanel {
                         }
                     }
                 }
-                if (g < goalRing.length && !hitGoal){
+                if (g < goalRing.length && !hitGoal) {
                     System.out.println("No laser found at goal " + g + ".");
                     return false;
                 }
