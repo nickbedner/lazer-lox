@@ -19,6 +19,10 @@ public class LevelLoader {
     }
 
     public boolean LoadLevel(int levelNumber) {
+        if (levelNumber < 0 || levelNumber > 99) {
+            throw new IllegalArgumentException("Level number must be between 0 and 99. Level Packs are limited to 100 levels each.");
+        }
+        levelNumber++; // Increment level number to match the line number in the file (1-indexed)
         try {
             File levelFile = new File(levelPath + "LevelPack1.txt");
             Scanner myReader = new Scanner(levelFile);
