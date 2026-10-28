@@ -18,6 +18,7 @@ class App extends JPanel {
     private int tunnelCount = 0;
     private boolean megaLaser = false;
     private boolean portalPuzzle = false;
+    private boolean hasWon = false;
 
     // Input state
     private boolean leftPressed = false;
@@ -104,6 +105,7 @@ class App extends JPanel {
                     }
                 }
             }
+            hasWon = false;
             levelLoaded = true;
         }
 
@@ -247,6 +249,12 @@ class App extends JPanel {
     }
 
     private void updateGame() {
+        if (!hasWon){
+            doLevelInteract();
+        }
+    }
+
+    private void doLevelInteract(){
         if (downPressed) {
             System.out.println("Moving down a ring: " + selected_ring);
             selected_ring = (selected_ring - 1 + 3) % 3;
@@ -275,14 +283,18 @@ class App extends JPanel {
             rings[selected_ring][0] = last;
         }
 
+        if (leftPressed || rightPressed || upPressed || downPressed) {
+            if (DoGoalCheck()) {
+                System.out.println("Level Complete!");
+                hasWon = true;
+            }
+        }
+
         // Clear pressed state at end of frame
         leftPressed = false;
         rightPressed = false;
         upPressed = false;
         downPressed = false;
-
-        // Check if Lasers meet goals
-        System.out.println("Lasers Hit Goals? " + DoGoalCheck());
     }
 
     @Override
