@@ -4,14 +4,21 @@ import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import javax.imageio.ImageIO;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 class App extends JPanel {
     // Level Info
     private final boolean[] goalRing = new boolean[12];
     private final LoxNode[][] rings = new LoxNode[3][12];
     private String currentLevel = "Win Test|Efrice|0000101101|11|4|110000001101|00";
-    // "Win Test|Efrice|0000101101|11|4|110000001101|00"
-    // "Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00"
+    // "Win Test|Efrice|0000101101|11|4|110000001101|00";
+    // "Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00";
+    // "Level 2 Test|Efrice|1010001001|000010001|1444441|41014|00";
     private int cLevelInd = 0;
     private boolean levelLoaded = false;
 
@@ -20,7 +27,7 @@ class App extends JPanel {
     private boolean megaLaser = false;
     private boolean portalPuzzle = false;
     private boolean hasWon = false;
-    private int winTimerMax = 60;  //60frames ~ 1 sec
+    private int winTimerMax = 60; // 60frames ~ 1 sec
     private int winTimer = 0;
 
     // Input state
@@ -50,8 +57,14 @@ class App extends JPanel {
 
     private static final double LASER_SPRITE_FORWARD_ANGLE = Math.PI / 2;
 
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
+
+    private boolean downloadingLevel = false;
+
     public App() {
-        
+
         hasWon = false;
         cLevelInd = 0;
         setupLevel();
@@ -193,6 +206,18 @@ class App extends JPanel {
                 System.exit(0);
             }
         });
+
+        // L Download and load Level 1 from Azure
+        inputMap.put(
+                KeyStroke.getKeyStroke("pressed L"),
+                "loadRemoteLevel");
+
+        actionMap.put("loadRemoteLevel", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                loadLevelFromServer(1);
+            }
+        });
     }
 
     private void setupLevel() {
@@ -256,14 +281,94 @@ class App extends JPanel {
         }
     }
 
+    private void loadLevelFromServer(int levelId) {
+        if (downloadingLevel)
+            return;
+
+        downloadingLevel = true;
+
+        String url = "http://130.131.97.156/api/level.php?id=" + levelId;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(10))
+                .GET()
+                .build();
+
+        System.out.println("Downloading level " + levelId);
+
+        // Make the request asynchronously so the game doesn't freeze while waiting for
+        // the server
+        httpClient.sendAsync(
+                request,
+                HttpResponse.BodyHandlers.ofString(
+                        StandardCharsets.UTF_8))
+                .whenComplete((response, error) -> {
+
+                    SwingUtilities.invokeLater(() -> {
+
+                        downloadingLevel = false;
+
+                        if (error != null) {
+                            System.err.println(
+                                    "Download failed: " + error.getMessage());
+                            return;
+                        }
+
+                        if (response.statusCode() != 200) {
+                            System.err.println(
+                                    "Server returned HTTP " + response.statusCode());
+                            return;
+                        }
+
+                        String downloadedLevel = response.body().stripTrailing();
+                        String[] parts = downloadedLevel.split("\\|", -1);
+                        if (parts.length != 7 ||
+                                parts[0].isBlank() || parts[0].length() > 32 ||
+                                parts[1].isBlank() || parts[1].length() > 32 ||
+                                !parts[2].matches("[01]{12}") ||
+                                !parts[3].matches("[0-6]{12}") ||
+                                !parts[4].matches("[0-6]{12}") ||
+                                !parts[5].matches("[0-6]{12}") ||
+                                !parts[6].matches("[01]{2}")) {
+
+                            System.err.println("Invalid level data received.");
+                            return;
+                        }
+
+                        System.out.println("Downloaded: " + downloadedLevel);
+
+                        // Reset state from the previous level
+                        hasWon = false;
+                        winTimer = 0;
+                        tunnelCount = 0;
+                        megaLaser = false;
+                        portalPuzzle = false;
+                        selected_ring = 0;
+
+                        leftPressed = false;
+                        rightPressed = false;
+                        upPressed = false;
+                        downPressed = false;
+
+                        currentLevel = downloadedLevel;
+                        levelLoaded = false;
+
+                        setupLevel();
+                        repaint();
+
+                        System.out.println("Successfully loaded level " + levelId);
+                    });
+                });
+    }
+
     private void updateGame() {
-        if (!hasWon){
+        if (!hasWon) {
             doLevelInteract();
-        }
-        else{
+        } else {
             winTimer++;
             System.out.println("Win Timer: " + winTimer);
-            if (winTimer >= winTimerMax){
+            if (winTimer >= winTimerMax) {
                 winTimer = 0;
                 cLevelInd++;
                 currentLevel = "";
@@ -274,7 +379,7 @@ class App extends JPanel {
         }
     }
 
-    private void doLevelInteract(){
+    private void doLevelInteract() {
         if (downPressed) {
             System.out.println("Moving down a ring: " + selected_ring);
             selected_ring = (selected_ring - 1 + 3) % 3;
