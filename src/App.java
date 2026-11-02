@@ -26,6 +26,8 @@ class App extends JPanel {
     private int tunnelCount = 0;
     private boolean megaLaser = false;
     private boolean portalPuzzle = false;
+    private boolean togglePuzzle = false;
+    private boolean carryPuzzle = false;
     private boolean hasWon = false;
     private int winTimerMax = 60; // 60frames ~ 1 sec
     private int winTimer = 0;
@@ -408,8 +410,11 @@ class App extends JPanel {
             rings[selected_ring][0] = last;
         }
 
+        //Check if the puzzle is won after each move.
         if (leftPressed || rightPressed || upPressed || downPressed) {
-            if (DoGoalCheck()) {
+            //Puzzle is assumed to always allow double lasers. Win check then worries about whether a double laser exists.
+            WinChecker wc = new WinChecker(megaLaser, true, tunnelCount > 0, portalPuzzle, togglePuzzle, carryPuzzle);
+            if (wc.checkWin(goalRing, rings)) {
                 System.out.println("Level Complete!");
                 hasWon = true;
             }
@@ -521,92 +526,7 @@ class App extends JPanel {
 
     // Returns true if there is a laser node facing a goal point with nothing
     // blocking it
-    private boolean DoGoalCheck() {
-        boolean hitGoal = false;
-        boolean canMega = megaLaser; // If a mega laser exists, we can ignore 1 blocking node
-        boolean needMega = false; // If a blocking node was found, we need to find a mega laser
-                                  // All lasers are blocking nodes so any other laser being found
-                                  // first immediately ends the check as a fail
-        // Loop through the Goal Ring
-        for (int g = 0; g < goalRing.length; g++) {
-            if (goalRing[g]) {
-                hitGoal = false;
-                boolean hasLaser = false;
-                for (int r = rings.length - 1; r > -1; r--) {
-                    if (rings[r][g] != null && rings[r][g].GetType() > 0) {
-                        int tmp = rings[r][g].GetType();
-                        // Double-sided laser with nothing blocking it
-                        if (!needMega && tmp == 2) {
-                            System.out.println("Double-Sided Laser found at goal " + g + ", goal is hit.");
-                            hasLaser = true;
-                            hitGoal = true;
-                            break;
-                        }
-                        // First blocking node found
-                        else if (canMega && tmp > 0 && tmp != 5) {
-                            canMega = false;
-                            needMega = true;
-                        }
-                        // Additional blocking node found, goal is blocked
-                        else if (!canMega && tmp > 0 && tmp != 5) {
-                            System.out.println("Too many obstacles at goal " + g + ", goal is blocked.");
-                            needMega = false;
-                            return false;
-                        }
-                    }
-                }
-                if (g < goalRing.length && !hasLaser) {
-                    for (int r = 0; r < rings.length; r++) {
-                        // Checking nodes on the opposite side of the same ring as the goal.
-                        int offset = g + 6;
-                        if (offset > 11)
-                            offset -= 12;
-                        if (rings[r][offset] != null && rings[r][offset].GetType() > 0) {
-                            int tmp = rings[r][offset].GetType();
-                            if (!hasLaser && tmp < 4) {
-                                // Laser found with nothing blocking it
-                                if (!needMega) {
-                                    System.out.println("Laser found at goal " + g + ", goal is hit.");
-                                    hasLaser = true;
-                                    hitGoal = true;
-                                    break;
-                                }
-                                // There is one blocking node between this mega laser and the goal
-                                else if (tmp == 3) {
-                                    System.out.println("Mega Laser found at goal " + g + ", goal is hit.");
-                                    hasLaser = true;
-                                    needMega = false;
-                                    hitGoal = true;
-                                    break;
-                                }
-                                // there is one blocking node between this laser and the goal
-                                else {
-                                    System.out.println("Too many obstacles at goal " + g + ", goal is blocked.");
-                                    needMega = false;
-                                    return false;
-                                }
-                            }
-                            // The first blocking node was hit. We now need the laser to be a mega laser
-                            else if (canMega && tmp > 0 && tmp != 5) {
-                                canMega = false;
-                            }
-                            // Another blocking node was found, goal is blocked
-                            else if (!canMega && tmp > 0 && tmp != 5) {
-                                System.out.println("Too many obstacles at goal " + g + ", goal is blocked.");
-                                needMega = false;
-                                return false;
-                            }
-                        }
-                    }
-                }
-                if (g < goalRing.length && !hitGoal) {
-                    System.out.println("No laser found at goal " + g + ".");
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
+    
 
     public static void main(String[] args) throws Exception {
         goalSprite = ImageIO.read(new File(sprPath + "/Goal.png"));
