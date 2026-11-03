@@ -34,7 +34,11 @@ public class WinChecker {
                 hitGoal = false;
                 boolean hasLaser = false;
                 for (int r = rings.length - 1; r > -1; r--) {
-                    if (rings[r][g] != null && rings[r][g].GetType() > 0) {
+                    if (rings[r][g] != null && !rings[r][g].IsOn()){
+                        System.out.println("Ring Off at first pass.");
+                        break;
+                    }
+                    else if (rings[r][g] != null && rings[r][g].GetType() > 0) {
                         int tmp = rings[r][g].GetType();
                         // Double-sided laser with nothing blocking it
                         if (!needMega && tmp == 2) {
@@ -56,12 +60,17 @@ public class WinChecker {
                         }
                     }
                 }
-                if (g < goals.length && !hasLaser) {
+                if (!hasLaser) {
                     for (int r = 0; r < rings.length; r++) {
                         // Checking nodes on the opposite side of the same ring as the goal.
                         int offset = g + 6;
                         if (offset > 11)
                             offset -= 12;
+                        if (rings[r][offset] != null && !rings[r][offset].IsOn()){
+                            System.out.println("Ring Off at second pass.");
+                            break;
+                        }
+
                         if (rings[r][offset] != null && rings[r][offset].GetType() > 0) {
                             int tmp = rings[r][offset].GetType();
                             if (!hasLaser && tmp < 4) {

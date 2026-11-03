@@ -33,6 +33,9 @@ class App extends JPanel {
     private int winTimer = 0;
 
     // Input state
+    private boolean spacePressed = false;
+    private boolean spaceHeld = false;
+
     private boolean leftPressed = false;
     private boolean leftHeld = false;
 
@@ -87,6 +90,35 @@ class App extends JPanel {
         InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         // Action to perform from input
         ActionMap actionMap = getActionMap();
+
+        //SPACE pressed
+        inputMap.put(
+                KeyStroke.getKeyStroke("pressed SPACE"),
+                "spacePressed");
+
+        actionMap.put("spacePressed", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Handle space key press
+                if (!spaceHeld)
+                    spacePressed = true;
+
+                spaceHeld = true;
+            }
+        });
+
+        //SPACE released
+        inputMap.put(
+                KeyStroke.getKeyStroke("released SPACE"),
+                "spaceReleased");
+
+        actionMap.put("spaceReleased", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                // Handle space key press
+                spaceHeld = false;
+            }
+        });
 
         // UP pressed
         inputMap.put(
@@ -410,9 +442,18 @@ class App extends JPanel {
             rings[selected_ring][0] = last;
         }
 
+        if (spacePressed) {
+            System.out.println("Toggling ring " + selected_ring);
+            for (int i = 0; i < 12; i++) {
+                if (rings[selected_ring][i] != null){
+                    rings[selected_ring][i].Toggle();
+                }
+            }
+        }
+
         //Check if the puzzle is won after each move.
-        if (leftPressed || rightPressed || upPressed || downPressed) {
-            //Puzzle is assumed to always allow double lasers. Win check then worries about whether a double laser exists.
+        if (leftPressed || rightPressed || upPressed || downPressed || spacePressed) {
+            //Puzzle is assumed to always allow double lasers. checkWin then worries about whether a double laser exists.
             WinChecker wc = new WinChecker(megaLaser, true, tunnelCount > 0, portalPuzzle, togglePuzzle, carryPuzzle);
             if (wc.checkWin(goalRing, rings)) {
                 System.out.println("Level Complete!");
@@ -425,6 +466,7 @@ class App extends JPanel {
         rightPressed = false;
         upPressed = false;
         downPressed = false;
+        spacePressed = false;
     }
 
     @Override
@@ -489,6 +531,15 @@ class App extends JPanel {
                             targetY - laserY,
                             targetX - laserX);
 
+                    //When a ring is turned off, its elements are made semi-transparent to show
+                    //they have no effect on anything
+                    if (rings[ring][i].IsOn()){
+                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+                    }
+                    else{
+                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+                    } 
+
                     // Draw rotated laser
                     Graphics2D rotated = (Graphics2D) g2d.create();
 
@@ -507,6 +558,14 @@ class App extends JPanel {
                      * (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI /
                      * 6))), 10, 10);
                      */
+
+                    if (rings[ring][i].IsOn()){
+                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+                    }
+                    else{
+                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+                    }
+
                     g2d.drawImage(blockerSprite,
                             (int) Math
                                     .round((centerX + ring_spcr * (ring + 1) * Math.cos(i * Math.PI / 6)) - offset / 2),
@@ -518,7 +577,18 @@ class App extends JPanel {
         }
 
         // Make it so it draws a circle around the selected ring
-        g2d.setColor(Color.GREEN);
+        int tmp = -1;
+        for (int i = 0; i < 12; i ++){
+            if (rings[selected_ring][i] != null) {
+                tmp = i;
+            }
+        }
+        if (tmp > -1 && rings[selected_ring][tmp].IsOn()) {
+            g2d.setColor(new Color(0,255,0,255));
+        }
+        else if (tmp > -1){
+            g2d.setColor(new Color(255,0,0,128));
+        }
         int radius = ring_spcr * (selected_ring + 1);
         int diameter = radius * 2;
         g2d.drawOval(centerX - radius, centerY - radius, diameter, diameter);
