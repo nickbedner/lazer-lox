@@ -19,18 +19,14 @@ class App extends JPanel {
     // "Win Test|Efrice|0000101101|11|4|110000001101|00";
     // "Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00";
     // "Level 2 Test|Efrice|1010001001|000010001|1444441|41014|00";
-    private int cLevelInd = 0;
-    private boolean levelLoaded = false;
+    LevelLoader lvl_inst;
 
-    // Level Win Check Info
-    private int tunnelCount = 0;
-    private boolean megaLaser = false;
-    private boolean portalPuzzle = false;
-    private boolean togglePuzzle = false;
-    private boolean carryPuzzle = false;
-    private boolean hasWon = false;
+    private int cLevelInd = 0;
+
+    //Win Variables
     private int winTimerMax = 60; // 60frames ~ 1 sec
     private int winTimer = 0;
+    private boolean hasWon = false;
 
     // Input state
     private boolean spacePressed = false;
@@ -72,7 +68,17 @@ class App extends JPanel {
 
         hasWon = false;
         cLevelInd = 0;
-        setupLevel();
+        lvl_inst = new LevelLoader(currentLevel);
+        LoxNode[][] ndRings = lvl_inst.SetupNodes();
+        for (int r = 0; r < 3; r++) {
+            for (int i = 0; i < 12; i++) {
+                rings[r][i] = ndRings[r][i];
+            }
+        }
+        boolean[] gRing = lvl_inst.SetupGoals();
+        for (int i = 0; i < 12; i++) {
+            goalRing[i] = gRing[i];
+        }
 
         setupInput();
 
@@ -254,67 +260,6 @@ class App extends JPanel {
         });
     }
 
-    private void setupLevel() {
-        LevelLoader levelLoader = new LevelLoader();
-        if (!levelLoaded) {
-            if ((currentLevel == null || currentLevel.isEmpty()) && levelLoader.LoadLevel(cLevelInd)) {
-                currentLevel = levelLoader.GetCurrentLevel();
-            }
-            String[] levelParts = currentLevel.split("\\|");
-
-            for (int i = 0; i < 12; i++) {
-                if (i < levelParts[2].length() && levelParts[2].charAt(i) == '1') {
-                    goalRing[i] = true;
-                } else
-                    goalRing[i] = false;
-            }
-            for (int ring = 0; ring < 3; ring++) {
-                for (int i = 0; i < 12; i++) {
-                    if (i >= levelParts[ring + 3].length() || levelParts[ring + 3].charAt(i) == '0') {
-                        rings[ring][i] = null;
-                    } else {
-                        char nodeType = levelParts[ring + 3].charAt(i);
-                        switch (nodeType) {
-                            // Regular Laser
-                            case '1':
-                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[] { 0, 0 }, 1);
-                                break;
-                            // Double-Sided Laser
-                            case '2':
-                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[] { 0, 0 }, 2);
-                                break;
-                            // Mega Laser
-                            case '3':
-                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[] { 0, 0 }, 3);
-                                megaLaser = true;
-                                break;
-                            // Regular Blocker
-                            case '4':
-                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[] { 0, 0 }, 4);
-                                break;
-                            // Tunnel
-                            case '5':
-                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[] { 0, 0 }, 5);
-                                tunnelCount++;
-                                break;
-                            // Portal
-                            case '6':
-                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[] { 0, 0 }, 6);
-                                portalPuzzle = true;
-                                break;
-                            // Unknown Node means just put nothing
-                            default:
-                                System.out.println("Unknown node type: " + nodeType);
-                                rings[ring][i] = null;
-                                break;
-                        }
-                    }
-                }
-            }
-            levelLoaded = true;
-        }
-    }
-
     private void loadLevelFromServer(int levelId) {
         if (downloadingLevel)
             return;
@@ -375,9 +320,6 @@ class App extends JPanel {
                         // Reset state from the previous level
                         hasWon = false;
                         winTimer = 0;
-                        tunnelCount = 0;
-                        megaLaser = false;
-                        portalPuzzle = false;
                         selected_ring = 0;
 
                         leftPressed = false;
@@ -386,9 +328,18 @@ class App extends JPanel {
                         downPressed = false;
 
                         currentLevel = downloadedLevel;
-                        levelLoaded = false;
+                        lvl_inst = new LevelLoader(currentLevel);
+                        LoxNode[][] ndRings = lvl_inst.SetupNodes();
+                        for (int r = 0; r < 3; r++) {
+                            for (int i = 0; i < 12; i++) {
+                                rings[r][i] = ndRings[r][i];
+                            }
+                        }
+                        boolean[] gRing = lvl_inst.SetupGoals();
+                        for (int i = 0; i < 12; i++) {
+                            goalRing[i] = gRing[i];
+                        }
 
-                        setupLevel();
                         repaint();
 
                         System.out.println("Successfully loaded level " + levelId);
@@ -405,9 +356,20 @@ class App extends JPanel {
             if (winTimer >= winTimerMax) {
                 winTimer = 0;
                 cLevelInd++;
-                currentLevel = "";
-                levelLoaded = false;
-                setupLevel();
+                boolean findLvl = lvl_inst.LoadLevel(cLevelInd);;
+                if (findLvl) {
+                    currentLevel = lvl_inst.GetCurrentLevel(); 
+                    LoxNode[][] ndRings = lvl_inst.SetupNodes();
+                    for (int r = 0; r < 3; r++) {
+                        for (int i = 0; i < 12; i++) {
+                            rings[r][i] = ndRings[r][i];
+                        }
+                    }
+                    boolean[] gRing = lvl_inst.SetupGoals();
+                    for (int i = 0; i < 12; i++) {
+                        goalRing[i] = gRing[i];
+                    }
+                } 
                 hasWon = false;
             }
         }
@@ -454,7 +416,8 @@ class App extends JPanel {
         //Check if the puzzle is won after each move.
         if (leftPressed || rightPressed || upPressed || downPressed || spacePressed) {
             //Puzzle is assumed to always allow double lasers. checkWin then worries about whether a double laser exists.
-            WinChecker wc = new WinChecker(megaLaser, true, tunnelCount > 0, portalPuzzle, togglePuzzle, carryPuzzle);
+            //Toggle and Carry are temp always false
+            WinChecker wc = new WinChecker(lvl_inst.hasMegaLaser(), true, lvl_inst.getTunnelCount() > 0, lvl_inst.isPortalPuzzle(), false, false);
             if (wc.checkWin(goalRing, rings)) {
                 System.out.println("Level Complete!");
                 hasWon = true;
