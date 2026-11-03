@@ -1,82 +1,73 @@
-public class BlockerBasic implements LoxNode {
+
+public class BlockerBasic extends Entity implements LoxNode {
+
     private int ring;
     private boolean ring_on;
     private int pos;
     private int[] posAbsolute;
     private int type;
 
-    //Quick and dirty simple blocker.
-    public BlockerBasic(int ring, boolean ring_on, int pos){
-        if (ring < 1 || ring > 3) {
-            throw new IllegalArgumentException("There are 3 Player Rings, so the ring must be between 1 and 3.");
-        } else{
-            this.ring = ring;
-        }
-        this.ring_on = ring_on;
-
-        if (pos < 0 || pos > 11) {
-            throw new IllegalArgumentException("There are 12 slots in a ring, so the position must be between 0 and 11.");
-        } else {
-            this.pos = pos;
-        }
-        this.posAbsolute = new int[]{0,0};
-        this.type = 4;
+    // Quick and dirty simple blocker.
+    public BlockerBasic(int ring, boolean ring_on, int pos) {
+        this(ring, ring_on, pos, new int[] { 0, 0 }, 4);
     }
 
-    //For the weird Blocker Variants if we make any.
-    public BlockerBasic(int ring, boolean ring_on, int pos, int[] posAbsolute, int type) {
+    // For the weird Blocker Variants if we make any.
+    public BlockerBasic(int ring, boolean ring_on, int pos,
+            int[] posAbsolute, int type) {
+
+        // Initialize the parent Entity.
+        // UUID is generated automatically by Entity.
+        super("Blocker.png", 0, 0, 0);
+
         if (ring < 1 || ring > 3) {
-            throw new IllegalArgumentException("There are 3 Player Rings, so the ring must be between 1 and 3.");
-        } else{
-            this.ring = ring;
+            throw new IllegalArgumentException(
+                    "There are 3 Player Rings, so the ring must be between 1 and 3.");
         }
-        this.ring_on = ring_on;
 
         if (pos < 0 || pos > 11) {
-            throw new IllegalArgumentException("There are 12 slots in a ring, so the position must be between 0 and 11.");
-        } else {
-            this.pos = pos;
+            throw new IllegalArgumentException(
+                    "There are 12 slots in a ring, so the position must be between 0 and 11.");
         }
-        this.posAbsolute = posAbsolute;
+
         if (type < 4 || type > 6) {
-            throw new IllegalArgumentException("Blockers are of types 4, 5, or 6 only.");
-        } else {
-            this.type = type;
+            throw new IllegalArgumentException(
+                    "Blockers are of types 4, 5, or 6 only.");
         }
+
+        this.ring = ring;
+        this.ring_on = ring_on;
+        this.pos = pos;
+        this.type = type;
+
+        SetAbsolutePosition(posAbsolute);
     }
 
-    //Toggle the on/off state of the Blocker.
     @Override
     public void Toggle() {
-        this.ring_on = !this.ring_on;
+        ring_on = !ring_on;
     }
 
-    //Get the Ring the Blocker is in.
     @Override
     public int GetRing() {
         return ring;
     }
 
-    //Get whether the Blocker is on.
     @Override
     public boolean IsOn() {
-        return this.ring_on;
+        return ring_on;
     }
 
-    //Get the Ring Position the Blocker is in.
     @Override
     public int GetPos() {
         return pos;
     }
 
-    //Get the screen position of this Blocker.
     @Override
     public int[] GetPosAbsolute() {
-        return posAbsolute;
+        return posAbsolute.clone();
     }
 
-    //Get what type of Blocker this is.
-    //4 - Basic Blocker
     @Override
     public int GetType() {
         return type;
@@ -84,6 +75,15 @@ public class BlockerBasic implements LoxNode {
 
     @Override
     public void SetAbsolutePosition(int[] newPosition) {
-        this.posAbsolute = newPosition;
+        if (newPosition == null || newPosition.length != 2) {
+            throw new IllegalArgumentException(
+                    "Position must contain exactly two coordinates.");
+        }
+
+        this.posAbsolute = newPosition.clone();
+
+        // Keep Entity's coordinates synchronized.
+        setX(newPosition[0]);
+        setY(newPosition[1]);
     }
 }

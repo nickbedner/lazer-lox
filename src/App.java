@@ -2,144 +2,115 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import javax.imageio.ImageIO;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
-class App extends JPanel {
-    // Level Info
-    private final boolean[] goalRing = new boolean[12];
-    private final LoxNode[][] rings = new LoxNode[3][12];
+public class App extends JPanel {
+    private static final int SLOTS = 12;
+    private static final int RING_COUNT = 3;
+    private static final int RING_SPACING = 40;
+    private static final int SPRITE_SIZE = 32;
+    private static final int FPS = 60;
+    private static final int FRAME_TIME = 1000 / FPS;
+    private static final double LASER_SPRITE_FORWARD_ANGLE = Math.PI / 2;
+
+    // Larger zDepth = in front. All goals are behind all movable nodes.
+    private static final float SENSOR_DEPTH = 0.0f;
+    private static final float NODE_DEPTH = 1.0f;
+
+    // Gameplay structure used by the existing WinChecker.
+    private final boolean[] goalRing = new boolean[SLOTS];
+    private final LoxNode[][] rings = new LoxNode[RING_COUNT][SLOTS];
+
+    // Render/update structure. Contains the SAME instances as the ring grid,
+    // plus the Sensor entities; no images or entities are copied.
+    private final List<Entity> entities = new ArrayList<>();
+
     private String currentLevel = "Win Test|Efrice|0000101101|11|4|110000001101|00";
-    // "Win Test|Efrice|0000101101|11|4|110000001101|00";
     // "Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00";
     // "Level 2 Test|Efrice|1010001001|000010001|1444441|41014|00";
     private int cLevelInd = 0;
     private boolean levelLoaded = false;
 
-    // Level Win Check Info
     private int tunnelCount = 0;
     private boolean megaLaser = false;
     private boolean portalPuzzle = false;
     private boolean togglePuzzle = false;
     private boolean carryPuzzle = false;
     private boolean hasWon = false;
-    private int winTimerMax = 60; // 60frames ~ 1 sec
+    private final int winTimerMax = 60;
     private int winTimer = 0;
 
-    // Input state
     private boolean spacePressed = false;
     private boolean spaceHeld = false;
-
     private boolean leftPressed = false;
     private boolean leftHeld = false;
-
     private boolean rightPressed = false;
     private boolean rightHeld = false;
-
     private boolean upPressed = false;
     private boolean upHeld = false;
-
     private boolean downPressed = false;
     private boolean downHeld = false;
-
     private int selected_ring = 0;
 
-    // 60 FPS game loop
-    private static final int FPS = 60;
-    private static final int FRAME_TIME = 1000 / FPS;
-
-    // Sprite Info
-    private final static String sprPath = "Sprite pngs";
-    private static BufferedImage laserSprite;
-    private static BufferedImage blockerSprite;
-    private static BufferedImage goalSprite;
-
-    private static final double LASER_SPRITE_FORWARD_ANGLE = Math.PI / 2;
+    // The ring grid stores logical slots, not screen coordinates. Recalculate
+    // sprite positions only after a move, level change, or panel resize.
+    private boolean layoutDirty = true;
+    private int lastLayoutWidth = -1;
+    private int lastLayoutHeight = -1;
 
     private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
-            .build();
-
+            .connectTimeout(Duration.ofSeconds(5)).build();
     private boolean downloadingLevel = false;
 
     public App() {
-
-        hasWon = false;
-        cLevelInd = 0;
         setupLevel();
-
         setupInput();
 
-        // Runs update + repaint approximately 60 times per second
         Timer gameLoop = new Timer(FRAME_TIME, e -> {
             updateGame();
             repaint();
         });
-
         gameLoop.start();
     }
 
     private void setupInput() {
-        // Input from user
         InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-        // Action to perform from input
         ActionMap actionMap = getActionMap();
 
-        //SPACE pressed
-        inputMap.put(
-                KeyStroke.getKeyStroke("pressed SPACE"),
-                "spacePressed");
-
+        inputMap.put(KeyStroke.getKeyStroke("pressed SPACE"), "spacePressed");
         actionMap.put("spacePressed", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Handle space key press
                 if (!spaceHeld)
                     spacePressed = true;
-
                 spaceHeld = true;
             }
         });
-
-        //SPACE released
-        inputMap.put(
-                KeyStroke.getKeyStroke("released SPACE"),
-                "spaceReleased");
-
+        inputMap.put(KeyStroke.getKeyStroke("released SPACE"), "spaceReleased");
         actionMap.put("spaceReleased", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // Handle space key press
                 spaceHeld = false;
             }
         });
 
-        // UP pressed
-        inputMap.put(
-                KeyStroke.getKeyStroke("pressed UP"),
-                "upPressed");
-
+        inputMap.put(KeyStroke.getKeyStroke("pressed UP"), "upPressed");
         actionMap.put("upPressed", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!upHeld)
                     upPressed = true;
-
                 upHeld = true;
             }
         });
-
-        // UP released
-        inputMap.put(
-                KeyStroke.getKeyStroke("released UP"),
-                "upReleased");
-
+        inputMap.put(KeyStroke.getKeyStroke("released UP"), "upReleased");
         actionMap.put("upReleased", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -147,26 +118,16 @@ class App extends JPanel {
             }
         });
 
-        // DOWN pressed
-        inputMap.put(
-                KeyStroke.getKeyStroke("pressed DOWN"),
-                "downPressed");
-
+        inputMap.put(KeyStroke.getKeyStroke("pressed DOWN"), "downPressed");
         actionMap.put("downPressed", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!downHeld)
                     downPressed = true;
-
                 downHeld = true;
             }
         });
-
-        // DOWN released
-        inputMap.put(
-                KeyStroke.getKeyStroke("released DOWN"),
-                "downReleased");
-
+        inputMap.put(KeyStroke.getKeyStroke("released DOWN"), "downReleased");
         actionMap.put("downReleased", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -174,26 +135,16 @@ class App extends JPanel {
             }
         });
 
-        // LEFT pressed
-        inputMap.put(
-                KeyStroke.getKeyStroke("pressed LEFT"),
-                "leftPressed");
-
+        inputMap.put(KeyStroke.getKeyStroke("pressed LEFT"), "leftPressed");
         actionMap.put("leftPressed", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!leftHeld)
                     leftPressed = true;
-
                 leftHeld = true;
             }
         });
-
-        // LEFT released
-        inputMap.put(
-                KeyStroke.getKeyStroke("released LEFT"),
-                "leftReleased");
-
+        inputMap.put(KeyStroke.getKeyStroke("released LEFT"), "leftReleased");
         actionMap.put("leftReleased", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -201,27 +152,16 @@ class App extends JPanel {
             }
         });
 
-        // RIGHT pressed
-        inputMap.put(
-                KeyStroke.getKeyStroke("pressed RIGHT"),
-                "rightPressed");
-
+        inputMap.put(KeyStroke.getKeyStroke("pressed RIGHT"), "rightPressed");
         actionMap.put("rightPressed", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (!rightHeld) {
+                if (!rightHeld)
                     rightPressed = true;
-                }
-
                 rightHeld = true;
             }
         });
-
-        // RIGHT released
-        inputMap.put(
-                KeyStroke.getKeyStroke("released RIGHT"),
-                "rightReleased");
-
+        inputMap.put(KeyStroke.getKeyStroke("released RIGHT"), "rightReleased");
         actionMap.put("rightReleased", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -229,11 +169,7 @@ class App extends JPanel {
             }
         });
 
-        // ESCAPE closes the program
-        inputMap.put(
-                KeyStroke.getKeyStroke("pressed ESCAPE"),
-                "exitGame");
-
+        inputMap.put(KeyStroke.getKeyStroke("pressed ESCAPE"), "exitGame");
         actionMap.put("exitGame", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -241,11 +177,7 @@ class App extends JPanel {
             }
         });
 
-        // L Download and load Level 1 from Azure
-        inputMap.put(
-                KeyStroke.getKeyStroke("pressed L"),
-                "loadRemoteLevel");
-
+        inputMap.put(KeyStroke.getKeyStroke("pressed L"), "loadRemoteLevel");
         actionMap.put("loadRemoteLevel", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -255,145 +187,127 @@ class App extends JPanel {
     }
 
     private void setupLevel() {
-        LevelLoader levelLoader = new LevelLoader();
-        if (!levelLoaded) {
-            if ((currentLevel == null || currentLevel.isEmpty()) && levelLoader.LoadLevel(cLevelInd)) {
-                currentLevel = levelLoader.GetCurrentLevel();
-            }
-            String[] levelParts = currentLevel.split("\\|");
+        if (levelLoaded)
+            return;
 
-            for (int i = 0; i < 12; i++) {
-                if (i < levelParts[2].length() && levelParts[2].charAt(i) == '1') {
-                    goalRing[i] = true;
-                } else
-                    goalRing[i] = false;
+        if (currentLevel == null || currentLevel.isEmpty()) {
+            LevelLoader levelLoader = new LevelLoader();
+            if (!levelLoader.LoadLevel(cLevelInd)) {
+                System.err.println("No level available at index " + cLevelInd);
+                return;
             }
-            for (int ring = 0; ring < 3; ring++) {
-                for (int i = 0; i < 12; i++) {
-                    if (i >= levelParts[ring + 3].length() || levelParts[ring + 3].charAt(i) == '0') {
-                        rings[ring][i] = null;
-                    } else {
-                        char nodeType = levelParts[ring + 3].charAt(i);
-                        switch (nodeType) {
-                            // Regular Laser
-                            case '1':
-                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[] { 0, 0 }, 1);
-                                break;
-                            // Double-Sided Laser
-                            case '2':
-                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[] { 0, 0 }, 2);
-                                break;
-                            // Mega Laser
-                            case '3':
-                                rings[ring][i] = new LaserBasic(ring + 1, true, i, new int[] { 0, 0 }, 3);
-                                megaLaser = true;
-                                break;
-                            // Regular Blocker
-                            case '4':
-                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[] { 0, 0 }, 4);
-                                break;
-                            // Tunnel
-                            case '5':
-                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[] { 0, 0 }, 5);
-                                tunnelCount++;
-                                break;
-                            // Portal
-                            case '6':
-                                rings[ring][i] = new BlockerBasic(ring + 1, true, i, new int[] { 0, 0 }, 6);
-                                portalPuzzle = true;
-                                break;
-                            // Unknown Node means just put nothing
-                            default:
-                                System.out.println("Unknown node type: " + nodeType);
-                                rings[ring][i] = null;
-                                break;
-                        }
-                    }
+            currentLevel = levelLoader.GetCurrentLevel();
+        }
+
+        String[] levelParts = currentLevel.split("\\|", -1);
+        if (levelParts.length != 7) {
+            throw new IllegalArgumentException("Expected seven level fields");
+        }
+
+        // Clear BOTH structures before building a new level. Old UUIDs and
+        // entity instances should not remain in the render list.
+        entities.clear();
+        tunnelCount = 0;
+        megaLaser = false;
+        portalPuzzle = false;
+        togglePuzzle = false;
+        carryPuzzle = false;
+        winTimer = 0;
+        hasWon = false;
+        selected_ring = 0;
+
+        // Turn goal bits into proper Sensor entities for the renderer.
+        for (int slot = 0; slot < SLOTS; slot++) {
+            goalRing[slot] = slot < levelParts[2].length()
+                    && levelParts[2].charAt(slot) == '1';
+            if (goalRing[slot]) {
+                entities.add(new Sensor(slot, 0, 0, SENSOR_DEPTH));
+            }
+        }
+
+        for (int ring = 0; ring < RING_COUNT; ring++) {
+            for (int slot = 0; slot < SLOTS; slot++) {
+                LoxNode node = null;
+                char type = (slot < levelParts[ring + 3].length())
+                        ? levelParts[ring + 3].charAt(slot)
+                        : '0';
+
+                if (type >= '1' && type <= '3') {
+                    node = new LaserBasic(ring + 1, true, slot,
+                            new int[] { 0, 0 }, type - '0');
+                    if (type == '3')
+                        megaLaser = true;
+                } else if (type >= '4' && type <= '6') {
+                    node = new BlockerBasic(ring + 1, true, slot,
+                            new int[] { 0, 0 }, type - '0');
+                    if (type == '5')
+                        tunnelCount++;
+                    if (type == '6')
+                        portalPuzzle = true;
+                } else if (type != '0') {
+                    System.out.println("Unknown node type: " + type);
+                }
+
+                rings[ring][slot] = node;
+                if (node != null) {
+                    // LaserBasic and BlockerBasic both extend Entity.
+                    Entity entity = (Entity) node;
+                    entity.setZDepth(NODE_DEPTH);
+                    entities.add(entity);
                 }
             }
-            levelLoaded = true;
         }
+
+        layoutDirty = true;
+        levelLoaded = true;
     }
 
     private void loadLevelFromServer(int levelId) {
         if (downloadingLevel)
             return;
-
         downloadingLevel = true;
 
         String url = "http://130.131.97.156/api/level.php?id=" + levelId;
-
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .timeout(Duration.ofSeconds(10))
-                .GET()
-                .build();
+                .GET().build();
 
         System.out.println("Downloading level " + levelId);
+        httpClient.sendAsync(request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
+                .whenComplete((response, error) -> SwingUtilities.invokeLater(() -> {
+                    downloadingLevel = false;
+                    if (error != null) {
+                        System.err.println("Download failed: " + error.getMessage());
+                        return;
+                    }
+                    if (response.statusCode() != 200) {
+                        System.err.println("Server returned HTTP " + response.statusCode());
+                        return;
+                    }
 
-        // Make the request asynchronously so the game doesn't freeze while waiting for
-        // the server
-        httpClient.sendAsync(
-                request,
-                HttpResponse.BodyHandlers.ofString(
-                        StandardCharsets.UTF_8))
-                .whenComplete((response, error) -> {
+                    String downloadedLevel = response.body().stripTrailing();
+                    String[] parts = downloadedLevel.split("\\|", -1);
+                    if (parts.length != 7
+                            || parts[0].isBlank() || parts[0].length() > 32
+                            || parts[1].isBlank() || parts[1].length() > 32
+                            || !parts[2].matches("[01]{12}")
+                            || !parts[3].matches("[0-6]{12}")
+                            || !parts[4].matches("[0-6]{12}")
+                            || !parts[5].matches("[0-6]{12}")
+                            || !parts[6].matches("[01]{2}")) {
+                        System.err.println("Invalid level data received.");
+                        return;
+                    }
 
-                    SwingUtilities.invokeLater(() -> {
-
-                        downloadingLevel = false;
-
-                        if (error != null) {
-                            System.err.println(
-                                    "Download failed: " + error.getMessage());
-                            return;
-                        }
-
-                        if (response.statusCode() != 200) {
-                            System.err.println(
-                                    "Server returned HTTP " + response.statusCode());
-                            return;
-                        }
-
-                        String downloadedLevel = response.body().stripTrailing();
-                        String[] parts = downloadedLevel.split("\\|", -1);
-                        if (parts.length != 7 ||
-                                parts[0].isBlank() || parts[0].length() > 32 ||
-                                parts[1].isBlank() || parts[1].length() > 32 ||
-                                !parts[2].matches("[01]{12}") ||
-                                !parts[3].matches("[0-6]{12}") ||
-                                !parts[4].matches("[0-6]{12}") ||
-                                !parts[5].matches("[0-6]{12}") ||
-                                !parts[6].matches("[01]{2}")) {
-
-                            System.err.println("Invalid level data received.");
-                            return;
-                        }
-
-                        System.out.println("Downloaded: " + downloadedLevel);
-
-                        // Reset state from the previous level
-                        hasWon = false;
-                        winTimer = 0;
-                        tunnelCount = 0;
-                        megaLaser = false;
-                        portalPuzzle = false;
-                        selected_ring = 0;
-
-                        leftPressed = false;
-                        rightPressed = false;
-                        upPressed = false;
-                        downPressed = false;
-
-                        currentLevel = downloadedLevel;
-                        levelLoaded = false;
-
-                        setupLevel();
-                        repaint();
-
-                        System.out.println("Successfully loaded level " + levelId);
-                    });
-                });
+                    leftPressed = rightPressed = upPressed = downPressed = spacePressed = false;
+                    currentLevel = downloadedLevel;
+                    levelLoaded = false;
+                    setupLevel();
+                    repaint();
+                    System.out.println("Successfully loaded level " + levelId);
+                }));
     }
 
     private void updateGame() {
@@ -401,213 +315,208 @@ class App extends JPanel {
             doLevelInteract();
         } else {
             winTimer++;
-            System.out.println("Win Timer: " + winTimer);
             if (winTimer >= winTimerMax) {
                 winTimer = 0;
                 cLevelInd++;
                 currentLevel = "";
                 levelLoaded = false;
                 setupLevel();
-                hasWon = false;
             }
+        }
+
+        // The entity list is also a convenient update list.
+        for (Entity entity : entities) {
+            entity.update(1.0f / FPS);
         }
     }
 
     private void doLevelInteract() {
-        if (downPressed) {
-            System.out.println("Moving down a ring: " + selected_ring);
-            selected_ring = (selected_ring - 1 + 3) % 3;
-        }
+        if (downPressed)
+            selected_ring = (selected_ring - 1 + RING_COUNT) % RING_COUNT;
+        if (upPressed)
+            selected_ring = (selected_ring + 1) % RING_COUNT;
 
-        if (upPressed) {
-            System.out.println("Moving up a ring: " + selected_ring);
-            selected_ring = (selected_ring + 1) % 3;
-        }
-
-        // For up or down press, shift all the lasers in the selected ring clockwise or
-        // counterclockwise
         if (leftPressed) {
-            System.out.println("Shifting ring " + selected_ring + " counterclockwise");
             LoxNode first = rings[selected_ring][0];
-            for (int i = 0; i < 11; i++)
+            for (int i = 0; i < SLOTS - 1; i++) {
                 rings[selected_ring][i] = rings[selected_ring][i + 1];
-            rings[selected_ring][11] = first;
+            }
+            rings[selected_ring][SLOTS - 1] = first;
+            layoutDirty = true;
         }
 
         if (rightPressed) {
-            System.out.println("Shifting ring " + selected_ring + " clockwise");
-            LoxNode last = rings[selected_ring][11];
-            for (int i = 11; i > 0; i--)
+            LoxNode last = rings[selected_ring][SLOTS - 1];
+            for (int i = SLOTS - 1; i > 0; i--) {
                 rings[selected_ring][i] = rings[selected_ring][i - 1];
+            }
             rings[selected_ring][0] = last;
+            layoutDirty = true;
         }
 
         if (spacePressed) {
-            System.out.println("Toggling ring " + selected_ring);
-            for (int i = 0; i < 12; i++) {
-                if (rings[selected_ring][i] != null){
-                    rings[selected_ring][i].Toggle();
-                }
+            for (LoxNode node : rings[selected_ring]) {
+                if (node != null)
+                    node.Toggle();
             }
         }
 
-        //Check if the puzzle is won after each move.
         if (leftPressed || rightPressed || upPressed || downPressed || spacePressed) {
-            //Puzzle is assumed to always allow double lasers. checkWin then worries about whether a double laser exists.
-            WinChecker wc = new WinChecker(megaLaser, true, tunnelCount > 0, portalPuzzle, togglePuzzle, carryPuzzle);
+            WinChecker wc = new WinChecker(megaLaser, true, tunnelCount > 0,
+                    portalPuzzle, togglePuzzle, carryPuzzle);
             if (wc.checkWin(goalRing, rings)) {
                 System.out.println("Level Complete!");
                 hasWon = true;
             }
         }
 
-        // Clear pressed state at end of frame
-        leftPressed = false;
-        rightPressed = false;
-        upPressed = false;
-        downPressed = false;
-        spacePressed = false;
+        leftPressed = rightPressed = upPressed = downPressed = spacePressed = false;
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g;
-        super.paintComponent(g2d);
-        // Setting BG Color
-        g2d.setColor(new Color(61, 88, 179));
-        g2d.fillRect(0, 0, getWidth(), getHeight());
+    /** Sync gameplay slots to drawable entity positions and laser rotations. */
+    private void layoutEntities() {
+        int width = getWidth();
+        int height = getHeight();
+        if (!layoutDirty && width == lastLayoutWidth && height == lastLayoutHeight) {
+            return;
+        }
+        int centerX = width / 2;
+        int centerY = height / 2;
 
-        g2d.setColor(Color.BLUE);
-        g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        int centerX = getWidth() / 2; // Horizontal center of window
-        int centerY = getHeight() / 2; // Vertical center of window
-        int ring_spcr = 40; // distance between rings
-        int offset = 32; // literal sprite offset
-        for (int i = 0; i < 12; i++) {
-            if (goalRing[i] == true) {
-                // g2d.drawOval((int) Math.round((centerX + offset * 5 * Math.cos(i * Math.PI /
-                // 6))),
-                // (int) Math.round((centerY + offset * 5 * Math.sin(i * Math.PI / 6))), 10,
-                // 10);
-                int ring_mult = 4; // Increases distance from other rings
-                g2d.drawImage(goalSprite,
-                        (int) Math.round((centerX + ring_spcr * ring_mult * Math.cos(i * Math.PI / 6)) - offset / 2),
-                        (int) Math.round((centerY + ring_spcr * ring_mult * Math.sin(i * Math.PI / 6)) - offset / 2),
-                        32, 32, null);
+        // Goal sensor centers are on the 4th circle.
+        for (Entity entity : entities) {
+            if (entity instanceof Sensor) {
+                Sensor sensor = (Sensor) entity;
+                double angle = sensor.getPos() * Math.PI / 6.0;
+                sensor.setX((float) (centerX + RING_SPACING * 4 * Math.cos(angle)));
+                sensor.setY((float) (centerY + RING_SPACING * 4 * Math.sin(angle)));
             }
         }
-        for (int ring = 0; ring < 3; ring++) {
-            for (int i = 0; i < 12; i++) {
-                if (rings[ring][i] != null && rings[ring][i].GetType() == 1) {
-                    /*
-                     * g2d.setColor(Color.RED);
-                     * g2d.fillRect((int) Math.round((centerX + offset * (ring + 1) * Math.cos(i *
-                     * Math.PI / 6))),
-                     * (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI /
-                     * 6))), 5, 15);
-                     */
-                    int type = rings[ring][i].GetType();
 
-                    // Position of the laser
-                    double angle = i * Math.PI / 6.0;
+        // Do NOT rely on node.GetPos(): a ring movement shifts the nodes
+        // between slots without changing their old GetPos() value.
+        for (int ring = 0; ring < RING_COUNT; ring++) {
+            for (int slot = 0; slot < SLOTS; slot++) {
+                LoxNode node = rings[ring][slot];
+                if (node == null)
+                    continue;
 
-                    double laserX = centerX + ring_spcr * (ring + 1) * Math.cos(angle);
-                    double laserY = centerY + ring_spcr * (ring + 1) * Math.sin(angle);
+                double angle = slot * Math.PI / 6.0;
+                double x = centerX + RING_SPACING * (ring + 1) * Math.cos(angle);
+                double y = centerY + RING_SPACING * (ring + 1) * Math.sin(angle);
+                node.SetAbsolutePosition(new int[] { (int) Math.round(x), (int) Math.round(y) });
 
-                    // Determine which goal direction to face
-                    int targetSlot = (i + 6) % 12;
-
-                    if (type == 2 && goalRing[i]) {
-                        targetSlot = i;
+                if (node instanceof LaserBasic) {
+                    Entity laser = (Entity) node;
+                    int targetSlot = (slot + 6) % SLOTS;
+                    if (node.GetType() == 2 && goalRing[slot]) {
+                        targetSlot = slot;
                     }
-
                     double targetAngle = targetSlot * Math.PI / 6.0;
-
-                    double targetX = centerX + ring_spcr * 4 * Math.cos(targetAngle);
-                    double targetY = centerY + ring_spcr * 4 * Math.sin(targetAngle);
-
-                    // Calculate rotation toward goal
-                    double rotation = Math.atan2(
-                            targetY - laserY,
-                            targetX - laserX);
-
-                    //When a ring is turned off, its elements are made semi-transparent to show
-                    //they have no effect on anything
-                    if (rings[ring][i].IsOn()){
-                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-                    }
-                    else{
-                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-                    } 
-
-                    // Draw rotated laser
-                    Graphics2D rotated = (Graphics2D) g2d.create();
-
-                    rotated.translate(laserX, laserY);
-                    rotated.rotate(rotation - LASER_SPRITE_FORWARD_ANGLE);
-
-                    rotated.drawImage(laserSprite, -16, -16, 32, 32, null);
-
-                    rotated.dispose();
-
-                } else if (rings[ring][i] != null && rings[ring][i].GetType() == 4) {
-                    /*
-                     * g2d.setColor(Color.BLACK);
-                     * g2d.fillRect((int) Math.round((centerX + offset * (ring + 1) * Math.cos(i *
-                     * Math.PI / 6))),
-                     * (int) Math.round((centerY + offset * (ring + 1) * Math.sin(i * Math.PI /
-                     * 6))), 10, 10);
-                     */
-
-                    if (rings[ring][i].IsOn()){
-                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
-                    }
-                    else{
-                        g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-                    }
-
-                    g2d.drawImage(blockerSprite,
-                            (int) Math
-                                    .round((centerX + ring_spcr * (ring + 1) * Math.cos(i * Math.PI / 6)) - offset / 2),
-                            (int) Math
-                                    .round((centerY + ring_spcr * (ring + 1) * Math.sin(i * Math.PI / 6)) - offset / 2),
-                            32, 32, null);
+                    double targetX = centerX + RING_SPACING * 4 * Math.cos(targetAngle);
+                    double targetY = centerY + RING_SPACING * 4 * Math.sin(targetAngle);
+                    double facing = Math.atan2(targetY - y, targetX - x);
+                    laser.setRotationRadians(facing - LASER_SPRITE_FORWARD_ANGLE);
                 }
             }
         }
 
-        // Make it so it draws a circle around the selected ring
-        int tmp = -1;
-        for (int i = 0; i < 12; i ++){
-            if (rings[selected_ring][i] != null) {
-                tmp = i;
-            }
-        }
-        if (tmp > -1 && rings[selected_ring][tmp].IsOn()) {
-            g2d.setColor(new Color(0,255,0,255));
-        }
-        else if (tmp > -1){
-            g2d.setColor(new Color(255,0,0,128));
-        }
-        int radius = ring_spcr * (selected_ring + 1);
-        int diameter = radius * 2;
-        g2d.drawOval(centerX - radius, centerY - radius, diameter, diameter);
+        lastLayoutWidth = width;
+        lastLayoutHeight = height;
+        layoutDirty = false;
     }
 
-    // Returns true if there is a laser node facing a goal point with nothing
-    // blocking it
-    
+    private void insertionSortEntitiesByDepth() {
+        for (int i = 1; i < entities.size(); i++) {
+            Entity key = entities.get(i);
+            int j = i - 1;
+            while (j >= 0 && entities.get(j).getZDepth() > key.getZDepth()) {
+                entities.set(j + 1, entities.get(j));
+                j--;
+            }
+            entities.set(j + 1, key);
+        }
+    }
 
-    public static void main(String[] args) throws Exception {
-        goalSprite = ImageIO.read(new File(sprPath + "/Goal.png"));
-        laserSprite = ImageIO.read(new File(sprPath + "/lasperPointer.png"));
-        blockerSprite = ImageIO.read(new File(sprPath + "/Blocker.png"));
+    private void drawEntity(Graphics2D g2d, Entity entity) {
+        if (entity.getTextureId() == null)
+            return;
 
-        JFrame frame = new JFrame("LazerLox");
+        float alpha = entity.getOpacity();
+        // The on/off effect multiplies (rather than overwrites) custom opacity
+        if (entity instanceof LoxNode && !((LoxNode) entity).IsOn()) {
+            alpha *= 0.5f;
+        }
+        if (alpha <= 0.0f)
+            return;
 
-        frame.add(new App());
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(640, 480);
-        frame.setVisible(true);
+        BufferedImage image = TextureManager.getTexture(entity.getTextureId());
+        if (image == null)
+            return;
+
+        // Isolate each entity's transform and composite from subsequent sprites
+        Graphics2D spriteGraphics = (Graphics2D) g2d.create();
+        try {
+            spriteGraphics.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            spriteGraphics.translate(entity.getX(), entity.getY());
+            spriteGraphics.rotate(entity.getRotationRadians());
+            spriteGraphics.drawImage(image, -SPRITE_SIZE / 2, -SPRITE_SIZE / 2,
+                    SPRITE_SIZE, SPRITE_SIZE, null);
+        } finally {
+            spriteGraphics.dispose();
+        }
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g.create();
+        try {
+            g2d.setColor(new Color(61, 88, 179));
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+
+            layoutEntities();
+            insertionSortEntitiesByDepth();
+            for (Entity entity : entities) {
+                drawEntity(g2d, entity);
+            }
+
+            // UI overlay always renders after world entities.
+            drawSelectedRing(g2d);
+        } finally {
+            g2d.dispose();
+        }
+    }
+
+    private void drawSelectedRing(Graphics2D g2d) {
+        Color ringColor = Color.BLUE;
+        for (LoxNode node : rings[selected_ring]) {
+            if (node != null) {
+                ringColor = node.IsOn() ? Color.GREEN : new Color(255, 0, 0, 128);
+                break;
+            }
+        }
+        g2d.setColor(ringColor);
+        g2d.setStroke(new BasicStroke(2, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        int radius = RING_SPACING * (selected_ring + 1);
+        g2d.drawOval(getWidth() / 2 - radius, getHeight() / 2 - radius,
+                radius * 2, radius * 2);
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            // TextureManager methods are static; no TextureManager instance needed
+            TextureManager.getTexture("Goal.png");
+            TextureManager.getTexture("lasperPointer.png");
+            TextureManager.getTexture("Blocker.png");
+
+            JFrame frame = new JFrame("LazerLox");
+            frame.add(new App());
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(640, 480);
+            frame.setLocationRelativeTo(null);
+            frame.setVisible(true);
+        });
     }
 }
