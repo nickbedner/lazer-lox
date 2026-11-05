@@ -40,7 +40,15 @@ public class LevelLoader {
                 myReader.nextLine();
                 levelNumber--;
             }
-            String tmpLevel = myReader.nextLine();
+            String tmpLevel = "";
+
+            if (!myReader.hasNextLine()) {
+                System.out.println("Level number exceeds the number of levels in the file.");
+                tmpLevel = "\"Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00\"";
+            }
+            else {
+                tmpLevel = myReader.nextLine();
+            }
             myReader.close();
             if (tmpLevel != null && !tmpLevel.isEmpty()) {
                 System.out.println("Found Level: " + tmpLevel);
@@ -58,6 +66,17 @@ public class LevelLoader {
 
     public boolean[] SetupGoals() {
         String goalParts = currentLevel.split("\\|")[2];
+        String toggleNcarry = currentLevel.split("\\|")[6];
+        togglePuzzle = false;
+        carryPuzzle = false;
+
+        if (toggleNcarry.charAt(0) == '1') {
+            togglePuzzle = true;
+        }
+
+        if (toggleNcarry.charAt(1) == '1') {
+            carryPuzzle = true;
+        }
 
         //All levels have 12 positions for goals
         boolean goalRing[] = new boolean[12];
@@ -134,5 +153,9 @@ public class LevelLoader {
 
     public int getTunnelCount() {
         return tunnelCount;
-    } 
+    }
+    
+    public boolean isTogglePuzzle() {
+        return togglePuzzle;
+    }
 }

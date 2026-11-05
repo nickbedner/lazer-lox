@@ -405,10 +405,12 @@ class App extends JPanel {
         }
 
         if (spacePressed) {
-            System.out.println("Toggling ring " + selected_ring);
-            for (int i = 0; i < 12; i++) {
-                if (rings[selected_ring][i] != null){
-                    rings[selected_ring][i].Toggle();
+            if (lvl_inst.isTogglePuzzle()) {
+                System.out.println("Toggling ring " + selected_ring);
+                for (int i = 0; i < 12; i++) {
+                    if (rings[selected_ring][i] != null){
+                        rings[selected_ring][i].Toggle();
+                    }
                 }
             }
         }
