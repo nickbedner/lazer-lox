@@ -7,9 +7,5 @@ public interface LoxNode {
 
     public boolean IsOn(); // Returns whether this LoxNode is turned on
 
-    public int[] GetPosAbsolute(); // Returns the literal position in screenspace of the LoxNode
-
-    public void SetAbsolutePosition(int[] newPosition); // Sets the literal position in screenspace of the LoxNode
-
     public int GetType(); // Returns the type of LoxNode, 0: Empty, 1-3: Lasers, 4: Blockers
 }
