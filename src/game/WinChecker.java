@@ -1,25 +1,22 @@
+package game;
+
 public class WinChecker {
+    private boolean megaCheck;
+    private boolean twoSideCheck;
+    private boolean tunnelCheck;
+    private boolean portalCheck;
+    private boolean toggleCheck;
+    private boolean carryCheck;
 
-    boolean megaCheck;
-    boolean twoSideCheck;
-    boolean tunnelCheck;
-    boolean portalCheck;
-    boolean toggleCheck;
-    boolean carryCheck;
-
-    WinChecker(){
-        megaCheck = false;
-        twoSideCheck = false;
-        tunnelCheck = false;
-        portalCheck = false;
-        toggleCheck = false;
-        carryCheck = false;
+    public WinChecker() {
+        this(false, false, false, false, false, false);
     }
 
-    WinChecker(boolean hasMega, boolean hasDouble, boolean hasTunnel, boolean hasPortal, boolean hasToggle, boolean hasCarry){
+    public WinChecker(boolean hasMega, boolean hasDouble, boolean hasTunnel, boolean hasPortal, boolean hasToggle,
+            boolean hasCarry) {
         megaCheck = hasMega;
         twoSideCheck = hasDouble;
-        tunnelCheck = hasTunnel;    
+        tunnelCheck = hasTunnel;
         portalCheck = hasPortal;
         toggleCheck = hasToggle;
         carryCheck = hasCarry;
@@ -34,11 +31,10 @@ public class WinChecker {
                 hitGoal = false;
                 boolean hasLaser = false;
                 for (int r = rings.length - 1; r > -1; r--) {
-                    if (rings[r][g] != null && !rings[r][g].IsOn()){
+                    if (rings[r][g] != null && !rings[r][g].IsOn()) {
                         System.out.println("Ring Off at first pass.");
                         break;
-                    }
-                    else if (rings[r][g] != null && rings[r][g].GetType() > 0) {
+                    } else if (rings[r][g] != null && rings[r][g].GetType() > 0) {
                         int tmp = rings[r][g].GetType();
                         // Double-sided laser with nothing blocking it
                         if (!needMega && tmp == 2) {
@@ -66,7 +62,7 @@ public class WinChecker {
                         int offset = g + 6;
                         if (offset > 11)
                             offset -= 12;
-                        if (rings[r][offset] != null && !rings[r][offset].IsOn()){
+                        if (rings[r][offset] != null && !rings[r][offset].IsOn()) {
                             System.out.println("Ring Off at second pass.");
                             break;
                         }

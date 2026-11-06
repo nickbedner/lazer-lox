@@ -1,3 +1,5 @@
+package game;
+
 public interface LoxNode {
     public void Toggle(); // Toggles the on/off state of the LoxNode
 
