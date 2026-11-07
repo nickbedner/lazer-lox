@@ -33,7 +33,15 @@ public class LevelLoader {
                 myReader.nextLine();
                 levelNumber--;
             }
-            String tmpLevel = myReader.nextLine();
+            String tmpLevel = "";
+            if (!myReader.hasNextLine()) {
+                System.out.println("Level number exceeds the number of levels in the file.");
+                tmpLevel = "\"Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00\"";
+            }
+            else {
+                tmpLevel = myReader.nextLine();
+            }
+
             myReader.close();
             if (tmpLevel != null && !tmpLevel.isEmpty()) {
                 System.out.println("Found Level: " + tmpLevel);

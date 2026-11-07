@@ -58,7 +58,7 @@ public class LaserBeam extends Entity {
     hitEntity = null;
 
     for (Entity entity : entities) {
-      if (entity == source || !(entity instanceof RingEntity))
+      if (entity == source || !(entity instanceof RingEntity) || (entity instanceof LoxNode && !((LoxNode) entity).IsOn()))
         continue;
 
       RingEntity target = (RingEntity) entity;

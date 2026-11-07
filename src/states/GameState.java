@@ -108,8 +108,8 @@ public class GameState implements State {
     tunnelCount = 0;
     megaLaser = false;
     portalPuzzle = false;
-    togglePuzzle = false;
-    carryPuzzle = false;
+    togglePuzzle = levelParts[6].charAt(0) == '1';
+    carryPuzzle = levelParts[6].charAt(1) == '1';
     winTimer = 0;
     hasWon = false;
     selected_ring = 0;
@@ -283,10 +283,12 @@ public class GameState implements State {
       refreshLaserBeams();
     }
 
-    if (spacePressed) {
+    if (spacePressed && togglePuzzle) {
       for (LoxNode node : rings[selected_ring]) {
-        if (node != null)
+        if (node != null){
           node.Toggle();
+          refreshLaserBeams();
+        }
       }
     }
 
