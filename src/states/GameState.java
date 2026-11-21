@@ -204,7 +204,9 @@ public class GameState implements State {
 
           if (node instanceof Laser)
             entities.add(new LaserBeam((Laser) node, app.getTextureManager().getTexture("laser.png"),
-                app.getTextureManager().getTexture("LaserEnd.png")));
+                app.getTextureManager().getTexture("LaserEnd.png"),
+                app.getTextureManager().getTexture("laserGreen.png"),
+                app.getTextureManager().getTexture("LaserEndGreen.png")));
 
         }
       }
@@ -351,13 +353,7 @@ public class GameState implements State {
   }
 
   private void checkForWin() {
-    WinChecker wc = new WinChecker(
-        megaLaser,
-        true,
-        tunnelCount > 0,
-        portalPuzzle,
-        togglePuzzle,
-        carryPuzzle);
+    WinChecker wc = new WinChecker(megaLaser, true, tunnelCount > 0, portalPuzzle, togglePuzzle, carryPuzzle);
 
     if (wc.checkWin(goalRing, rings)) {
       System.out.println("Level Complete!");
