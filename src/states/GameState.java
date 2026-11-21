@@ -340,7 +340,7 @@ public class GameState implements State {
       return;
     }
 
-    if (spacePressed) {
+    if (spacePressed && togglePuzzle) {
       for (LoxNode node : rings[selected_ring]) {
         if (node != null)
           node.Toggle();
