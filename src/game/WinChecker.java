@@ -22,6 +22,7 @@ public class WinChecker {
         carryCheck = hasCarry;
     }
 
+    // This function checks if the player has won
     public boolean checkWin(boolean[] goals, LoxNode[][] rings) {
         boolean hitGoal = false;
         boolean canMega = megaCheck;
@@ -33,7 +34,7 @@ public class WinChecker {
                 for (int r = rings.length - 1; r > -1; r--) {
                     if (rings[r][g] == null || !rings[r][g].IsOn()) {
                         System.out.println("Ring Off at first pass.");
-                        //break;
+                        // break;
                     } else if (rings[r][g].GetType() > 0) {
                         int tmp = rings[r][g].GetType();
                         // Double-sided laser with nothing blocking it
@@ -64,9 +65,8 @@ public class WinChecker {
                             offset -= 12;
                         if (rings[r][offset] == null || !rings[r][offset].IsOn()) {
                             System.out.println("Ring Off at second pass.");
-                            //break;
-                        }
-                        else if (rings[r][offset].GetType() > 0) {
+                            // break;
+                        } else if (rings[r][offset].GetType() > 0) {
                             int tmp = rings[r][offset].GetType();
                             if (!hasLaser && tmp < 4) {
                                 // Laser found with nothing blocking it
