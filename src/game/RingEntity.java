@@ -16,8 +16,6 @@ public abstract class RingEntity extends Entity {
     this.ring = ring;
     this.slot = slot;
     updatePosition();
-    // Do not call setRingSlot() here; Laser overrides it and needs
-    // its own fields initialized before that override can run.
   }
 
   private static void validateSlot(int slot) {
@@ -26,10 +24,13 @@ public abstract class RingEntity extends Entity {
   }
 
   private void updatePosition() {
-    double angle = slot * 2.0 * Math.PI / SLOTS;
+    setVisualAngleRadians(slot * 2.0 * Math.PI / SLOTS);
+  }
+
+  public final void setVisualAngleRadians(double angle) {
     float radius = ring * RING_SPACING;
-    setPosition((float) (radius * Math.cos(angle)),
-        (float) (radius * Math.sin(angle)));
+
+    setPosition((float) (radius * Math.cos(angle)), (float) (radius * Math.sin(angle)));
   }
 
   public int getRing() {

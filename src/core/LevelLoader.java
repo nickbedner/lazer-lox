@@ -37,8 +37,7 @@ public class LevelLoader {
             if (!myReader.hasNextLine()) {
                 System.out.println("Level number exceeds the number of levels in the file.");
                 tmpLevel = "\"Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00\"";
-            }
-            else {
+            } else {
                 tmpLevel = myReader.nextLine();
             }
 

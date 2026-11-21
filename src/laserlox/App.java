@@ -7,6 +7,7 @@ import core.State;
 import graphics.TextureManager;
 import states.MenuState;
 
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
@@ -154,7 +155,8 @@ public class App extends JPanel {
 
             frame.add(app);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(640, 480);
+            frame.setPreferredSize(new Dimension(640, 512));
+            frame.pack();
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });

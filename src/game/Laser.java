@@ -24,21 +24,33 @@ public class Laser extends Blocker {
         setRingSlot(pos);
     }
 
-    @Override
-    public void setRingSlot(int slot) {
-        super.setRingSlot(slot);
+    public double getFacingRadiansForSlot(int slot) {
+        if (slot < 0 || slot >= SLOTS)
+            throw new IllegalArgumentException("Invalid slot.");
 
         int targetSlot = (slot + SLOTS / 2) % SLOTS;
 
         if (GetType() == 2 && goalRing[slot])
             targetSlot = slot;
 
-        double angle = targetSlot * 2 * Math.PI / SLOTS;
-        double radius = RING_SPACING * 4;
+        double sourceAngle = slot * 2.0 * Math.PI / SLOTS;
+        double targetAngle = targetSlot * 2.0 * Math.PI / SLOTS;
 
-        float targetX = (float) (radius * Math.cos(angle));
-        float targetY = (float) (radius * Math.sin(angle));
+        double sourceRadius = getRing() * RING_SPACING;
+        double targetRadius = 4.0 * RING_SPACING;
 
-        faceTowards(targetX, targetY);
+        double sourceX = sourceRadius * Math.cos(sourceAngle);
+        double sourceY = sourceRadius * Math.sin(sourceAngle);
+
+        double targetX = targetRadius * Math.cos(targetAngle);
+        double targetY = targetRadius * Math.sin(targetAngle);
+
+        return Math.atan2(targetY - sourceY, targetX - sourceX) - Math.PI / 2;
+    }
+
+    @Override
+    public void setRingSlot(int slot) {
+        super.setRingSlot(slot);
+        setRotationRadians(getFacingRadiansForSlot(slot));
     }
 }

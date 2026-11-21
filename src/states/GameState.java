@@ -13,6 +13,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.awt.image.BufferedImage;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,11 +44,14 @@ public class GameState implements State {
   private boolean togglePuzzle = false;
   private boolean carryPuzzle = false;
   private boolean hasWon = false;
-  private final int winTimerMax = 60;
+  private final int winTimerMax = 120;
   private int winTimer = 0;
 
   private int selected_ring = 0;
+  private RingRotationAnimation ringRotation;
 
+  private static final String NORMAL_BACKGROUND = "window.png";
+  private static final String WON_BACKGROUND = "windowAcessGranted.png";
   private final App app;
 
   private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
@@ -64,26 +69,79 @@ public class GameState implements State {
 
   @Override
   public void render(Graphics2D g2d) {
-    // Background blue color
-    g2d.setColor(new Color(61, 88, 179));
+    // Background color
+    g2d.setColor(new Color(255, 255, 255));
     g2d.fillRect(0, 0, app.getWidth(), app.getHeight());
 
+    BufferedImage background = app.getTextureManager().getTexture(hasWon ? WON_BACKGROUND : NORMAL_BACKGROUND);
+
+    if (background != null) {
+      int side = Math.min(app.getWidth(), app.getHeight());
+      Graphics2D backgroundGraphics = (Graphics2D) g2d.create();
+
+      try {
+        backgroundGraphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+            RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+
+        backgroundGraphics.drawImage(background, (app.getWidth() - side) / 2, (app.getHeight() - side) / 2, side, side,
+            null);
+      } finally {
+        backgroundGraphics.dispose();
+      }
+    }
+
     Graphics2D centered = (Graphics2D) g2d.create();
+
     try {
-      // Translate to middle of screen
       centered.translate(app.getWidth() / 2.0, app.getHeight() / 2.0);
 
-      // Depth sort the game entities for rendering
+      // Calculate the white interior of window.png.
+      int side = Math.min(app.getWidth(), app.getHeight());
+      int bgX = (app.getWidth() - side) / 2;
+      int bgY = (app.getHeight() - side) / 2;
+
+      // The white area inside the 256x256 background sprite.
+      int clipX = bgX + side * 8 / 256;
+      int clipY = bgY + side * 31 / 256;
+      int clipW = side * 240 / 256;
+      int clipH = side * 201 / 256;
+
+      // Convert screen coordinates to centered game coordinates.
+      Rectangle laserClip = new Rectangle(
+          clipX - app.getWidth() / 2,
+          clipY - app.getHeight() / 2,
+          clipW,
+          clipH);
+
+      // Depth sort entities.
       entities.sort((a, b) -> Float.compare(a.getZDepth(), b.getZDepth()));
+
       for (Entity entity : entities) {
-        entity.render(centered);
+
+        if (entity instanceof LaserBeam) {
+
+          // Clip only the lasers, not the other entities.
+          Graphics2D beamGraphics = (Graphics2D) centered.create();
+
+          try {
+            beamGraphics.setClip(laserClip);
+            entity.render(beamGraphics);
+          } finally {
+            beamGraphics.dispose();
+          }
+
+        } else {
+          entity.render(centered);
+        }
       }
+
     } finally {
       centered.dispose();
     }
 
     // Draw the selection right
-    drawSelectedRing(g2d);
+    if (!hasWon)
+      drawSelectedRing(g2d);
   }
 
   private void setupLevel() {
@@ -113,6 +171,7 @@ public class GameState implements State {
     winTimer = 0;
     hasWon = false;
     selected_ring = 0;
+    ringRotation = null;
 
     for (int slot = 0; slot < SLOTS; slot++) {
       goalRing[slot] = slot < levelParts[2].length() && levelParts[2].charAt(slot) == '1';
@@ -146,9 +205,10 @@ public class GameState implements State {
           Entity entity = (Entity) node;
           entities.add(entity);
 
-          if (node instanceof Laser) {
-            entities.add(new LaserBeam((Laser) node));
-          }
+          if (node instanceof Laser)
+            entities.add(new LaserBeam((Laser) node, app.getTextureManager().getTexture("laser.png"),
+                app.getTextureManager().getTexture("LaserEnd.png")));
+
         }
       }
     }
@@ -213,13 +273,26 @@ public class GameState implements State {
       app.changeState(new MenuState(app));
       return;
     }
+
     // TODO: This is temp, pressing L loads a level from the server
     if (input.wasPressed(KeyEvent.VK_L))
       loadLevelFromServer(1);
 
-    if (!hasWon)
-      doLevelInteract(input);
-    else {
+    if (!hasWon) {
+      if (ringRotation != null) {
+        boolean completed = ringRotation.update(deltaTime);
+
+        // Recalculate as rings move, so beams follow moving emitters/blockers.
+        refreshLaserBeams();
+
+        if (completed) {
+          ringRotation = null;
+          checkForWin();
+        }
+      } else {
+        doLevelInteract(input);
+      }
+    } else {
       winTimer++;
       if (winTimer >= winTimerMax) {
         winTimer = 0;
@@ -227,6 +300,7 @@ public class GameState implements State {
         currentLevel = "";
         levelLoaded = false;
         setupLevel();
+
         if (!levelLoaded) {
           app.changeState(new MenuState(app));
           return;
@@ -255,51 +329,43 @@ public class GameState implements State {
 
     if (downPressed)
       selected_ring = (selected_ring - 1 + RING_COUNT) % RING_COUNT;
+
     if (upPressed)
       selected_ring = (selected_ring + 1) % RING_COUNT;
 
-    if (leftPressed) {
-      LoxNode first = rings[selected_ring][0];
-      for (int i = 0; i < SLOTS - 1; i++)
-        rings[selected_ring][i] = rings[selected_ring][i + 1];
-
-      rings[selected_ring][SLOTS - 1] = first;
+    // Only accept one rotation at a time
+    if (leftPressed != rightPressed) {
+      ringRotation = new RingRotationAnimation(
+          rings[selected_ring],
+          rightPressed ? 1 : -1);
+      return;
     }
-    if (rightPressed) {
-      LoxNode last = rings[selected_ring][SLOTS - 1];
-      for (int i = SLOTS - 1; i > 0; i--)
-        rings[selected_ring][i] = rings[selected_ring][i - 1];
 
-      rings[selected_ring][0] = last;
-    }
-    if (leftPressed || rightPressed) {
-      for (int slot = 0; slot < SLOTS; slot++) {
-        LoxNode node = rings[selected_ring][slot];
-
+    if (spacePressed) {
+      for (LoxNode node : rings[selected_ring]) {
         if (node != null)
-          ((RingEntity) node).setRingSlot(slot);
+          node.Toggle();
       }
-
       refreshLaserBeams();
     }
 
-    if (spacePressed && togglePuzzle) {
-      for (LoxNode node : rings[selected_ring]) {
-        if (node != null){
-          node.Toggle();
-          refreshLaserBeams();
-        }
-      }
-    }
+    if (upPressed || downPressed || spacePressed)
+      checkForWin();
+  }
 
-    if (leftPressed || rightPressed || upPressed || downPressed || spacePressed) {
-      WinChecker wc = new WinChecker(megaLaser, true, tunnelCount > 0, portalPuzzle, togglePuzzle, carryPuzzle);
-      if (wc.checkWin(goalRing, rings)) {
-        System.out.println("Level Complete!");
-        hasWon = true;
-      }
-    }
+  private void checkForWin() {
+    WinChecker wc = new WinChecker(
+        megaLaser,
+        true,
+        tunnelCount > 0,
+        portalPuzzle,
+        togglePuzzle,
+        carryPuzzle);
 
+    if (wc.checkWin(goalRing, rings)) {
+      System.out.println("Level Complete!");
+      hasWon = true;
+    }
   }
 
   private void drawSelectedRing(Graphics2D g2d) {
