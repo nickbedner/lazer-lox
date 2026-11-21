@@ -52,8 +52,9 @@ public class GameState implements State {
   private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
   private boolean downloadingLevel = false;
 
-  public GameState(App app) {
+  public GameState(App app, int level) {
     this.app = app;
+    cLevelInd = level;
     setupLevel();
   }
 
