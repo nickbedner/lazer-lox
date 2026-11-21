@@ -27,7 +27,8 @@ public class MenuState implements State {
   public MenuState(App app) {
     this.app = app;
     // Two buttons, play to enter game state and exit to quit progran
-    entities.add(new Button("Play", () -> app.changeState(new GameState(app))));
+    entities.add(new Button("Play", () -> app.changeState(new LevelSelectState(app))));
+    entities.add(new Button("Build", () -> app.changeState(new BoDState(app))));
     entities.add(new Button("Exit", () -> System.exit(0)));
   }
 

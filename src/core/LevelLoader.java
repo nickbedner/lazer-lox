@@ -20,6 +20,24 @@ public class LevelLoader {
         return currentLevel;
     }
 
+    public int GetNumLevels(){
+        int levels = 0;
+        try {
+            File levelFile = new File(levelPath + "LevelPack1.txt");
+            Scanner myReader = new Scanner(levelFile);
+            while (myReader.hasNextLine()) {
+                myReader.nextLine();
+                levels++;
+            }
+            myReader.close();
+            return levels;
+        } catch (FileNotFoundException e) {
+            System.out.println("An error occurred while loading the level.");
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
     public boolean LoadLevel(int levelNumber) {
         if (levelNumber < 0 || levelNumber > 99) {
             throw new IllegalArgumentException(
