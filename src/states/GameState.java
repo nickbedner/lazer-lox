@@ -50,9 +50,9 @@ public class GameState implements State {
   private int selected_ring = 0;
   private RingRotationAnimation ringRotation;
 
+  private final App app;
   private static final String NORMAL_BACKGROUND = "window.png";
   private static final String WON_BACKGROUND = "windowAcessGranted.png";
-  private final App app;
 
   private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
   private boolean downloadingLevel = false;
@@ -96,32 +96,28 @@ public class GameState implements State {
     try {
       centered.translate(app.getWidth() / 2.0, app.getHeight() / 2.0);
 
-      // Calculate the white interior of window.png.
+      // Calculate the white interior of window.png
       int side = Math.min(app.getWidth(), app.getHeight());
       int bgX = (app.getWidth() - side) / 2;
       int bgY = (app.getHeight() - side) / 2;
 
-      // The white area inside the 256x256 background sprite.
+      // The white area inside the 256x256 background sprite
       int clipX = bgX + side * 8 / 256;
       int clipY = bgY + side * 31 / 256;
       int clipW = side * 240 / 256;
       int clipH = side * 201 / 256;
 
-      // Convert screen coordinates to centered game coordinates.
-      Rectangle laserClip = new Rectangle(
-          clipX - app.getWidth() / 2,
-          clipY - app.getHeight() / 2,
-          clipW,
-          clipH);
+      // Convert screen coordinates to centered game coordinates
+      Rectangle laserClip = new Rectangle(clipX - app.getWidth() / 2, clipY - app.getHeight() / 2, clipW, clipH);
 
-      // Depth sort entities.
+      // Depth sort entities
       entities.sort((a, b) -> Float.compare(a.getZDepth(), b.getZDepth()));
 
       for (Entity entity : entities) {
 
         if (entity instanceof LaserBeam) {
 
-          // Clip only the lasers, not the other entities.
+          // Clip only the lasers, not the other entities
           Graphics2D beamGraphics = (Graphics2D) centered.create();
 
           try {

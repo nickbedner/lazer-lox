@@ -1,6 +1,7 @@
 package game;
 
 public final class RingRotationAnimation {
+  // The duration of the smoothstep animation in seconds
   public static final float DURATION_SECONDS = 0.125f;
 
   private final LoxNode[] nodes;
@@ -58,7 +59,7 @@ public final class RingRotationAnimation {
     if (elapsedSeconds < DURATION_SECONDS)
       return false;
 
-    // Commit the discrete puzzle state after animation
+    // Finalize the puzzle state AFTER animation complete
     if (direction == 1) {
       LoxNode last = nodes[RingEntity.SLOTS - 1];
 

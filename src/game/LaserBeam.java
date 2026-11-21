@@ -25,10 +25,7 @@ public class LaserBeam extends Entity {
   private float endY;
   private RingEntity hitEntity;
 
-  public LaserBeam(
-      Laser source,
-      BufferedImage bodyTexture,
-      BufferedImage endTexture) {
+  public LaserBeam(Laser source, BufferedImage bodyTexture, BufferedImage endTexture) {
     super(source.getX(), source.getY(), 0.5f);
     this.source = source;
     this.bodyTexture = bodyTexture;
@@ -37,7 +34,7 @@ public class LaserBeam extends Entity {
 
   @Override
   public void update(float deltaTime) {
-    // Collision is recalculated by GameState.
+    // Collision is recalculated by GameState
   }
 
   @Override
@@ -46,15 +43,12 @@ public class LaserBeam extends Entity {
       return;
 
     double angle = source.getRotationRadians() + Math.PI / 2;
-
     boolean hit = hitEntity != null;
 
-    // If no collision, extend far beyond the visible window.
-    // GameState will clip the beam at the window border.
+    // If no collision, extend far beyond the visible windowGameState will clip the
+    // beam at the window border
     int length = hit
-        ? Math.round((float) Math.hypot(
-            endX - getX(),
-            endY - getY()))
+        ? Math.round((float) Math.hypot(endX - getX(), endY - getY()))
         : UNBLOCKED_BEAM_LENGTH;
 
     if (length <= 0)
@@ -66,67 +60,39 @@ public class LaserBeam extends Entity {
       g.translate(getX(), getY());
       g.rotate(angle);
 
-      g.setRenderingHint(
-          RenderingHints.KEY_INTERPOLATION,
-          RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+      g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 
       if (bodyTexture != null && endTexture != null) {
 
         int endWidth = Math.min(SPRITE_SIZE, length);
+        int bodyWidth = hit ? Math.max(0, length - endWidth + END_HIT_OVERLAP) : length;
 
-        int bodyWidth = hit
-            ? Math.max(0, length - endWidth + END_HIT_OVERLAP)
-            : length;
+        // Draw the laser beam unblocked beams continue until the window clips them.
+        g.drawImage(bodyTexture, 0, -SPRITE_SIZE / 2, bodyWidth, SPRITE_SIZE, null);
 
-        // Draw the laser beam.
-        // Unblocked beams continue until the window clips them.
-        g.drawImage(
-            bodyTexture,
-            0,
-            -SPRITE_SIZE / 2,
-            bodyWidth,
-            SPRITE_SIZE,
-            null);
-
-        // Only draw LaserEnd when an entity is hit.
+        // Only draw LaserEnd when an entity is hit
         if (hit) {
 
-          // Keep the slightly thicker endpoint.
+          // IMPORTANT: This slightly shrinks the endpoint of the laser so it matches the
+          // width of the laser beam
           int endHeight = SPRITE_SIZE - 4;
 
-          // Draw the endpoint flipped horizontally.
-          g.drawImage(
-              endTexture,
-              bodyWidth,
-              -endHeight / 2,
-              bodyWidth + endWidth,
-              endHeight / 2,
-              endTexture.getWidth(),
-              0,
-              0,
-              endTexture.getHeight(),
-              null);
+          // Draw the endpoint flipped horizontally
+          g.drawImage(endTexture, bodyWidth, -endHeight / 2, bodyWidth + endWidth, endHeight / 2, endTexture.getWidth(),
+              0, 0, endTexture.getHeight(), null);
         }
 
       } else {
-        // Fallback rendering if textures are unavailable.
-        g.setRenderingHint(
-            RenderingHints.KEY_ANTIALIASING,
-            RenderingHints.VALUE_ANTIALIAS_ON);
+        // Fallback rendering if textures are unavailable
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         g.setColor(new Color(255, 0, 0, 70));
-        g.setStroke(new BasicStroke(
-            5f,
-            BasicStroke.CAP_ROUND,
-            BasicStroke.JOIN_ROUND));
+        g.setStroke(new BasicStroke(5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
         g.draw(new Line2D.Float(0, 0, length, 0));
 
         g.setColor(Color.RED);
-        g.setStroke(new BasicStroke(
-            1.5f,
-            BasicStroke.CAP_ROUND,
-            BasicStroke.JOIN_ROUND));
+        g.setStroke(new BasicStroke(1.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
 
         g.draw(new Line2D.Float(0, 0, length, 0));
       }
@@ -163,16 +129,13 @@ public class LaserBeam extends Entity {
       float oy = target.getY() - startY;
 
       float projection = ox * dx + oy * dy;
-
       float distanceSquared = ox * ox + oy * oy - projection * projection;
-
       float radiusSquared = COLLISION_RADIUS * COLLISION_RADIUS;
 
       if (distanceSquared > radiusSquared)
         continue;
 
-      float offset = (float) Math.sqrt(
-          Math.max(0f, radiusSquared - distanceSquared));
+      float offset = (float) Math.sqrt(Math.max(0f, radiusSquared - distanceSquared));
 
       float hitDistance = projection - offset;
 
