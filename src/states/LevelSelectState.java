@@ -34,7 +34,7 @@ public class LevelSelectState implements State {
     entities.add(new Button("Prev Page", () -> app.changeState(new MenuState(app))));
     entities.add(new Button("Next Page", () -> app.changeState(new MenuState(app))));
     for (int i = 0; i < levels; i ++) {
-      final int tmp = i;
+      int tmp = i;
       //Remember level 0 is level 1!
       if (i < 9)
         entities.add(new Button("0" + (tmp + 1), () -> app.changeState(new GameState(app, tmp))));

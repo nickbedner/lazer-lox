@@ -32,7 +32,7 @@ public class GameState implements State {
 
   private final List<Entity> entities = new ArrayList<>();
 
-  private String currentLevel = "Win Test|Efrice|0000101101|11|4|110000001101|00";
+  private String currentLevel = "";
   // "Level 1|Efrice|110000101000|000010004400|000000010140|144444444100|00";
   // "Level 2 Test|Efrice|1010001001|000010001|1444441|41014|00";
   private int cLevelInd = 0;
