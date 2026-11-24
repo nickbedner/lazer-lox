@@ -173,7 +173,7 @@ public class GameState implements State {
     for (int slot = 0; slot < SLOTS; slot++) {
       goalRing[slot] = slot < levelParts[2].length() && levelParts[2].charAt(slot) == '1';
       if (goalRing[slot])
-        entities.add(new Sensor(new Sprite(app.getTextureManager().getTexture("Goal.png")), slot, SENSOR_DEPTH));
+        entities.add(new Sensor(new Sprite(app.getTextureManager().getTexture("lock.png")), slot, SENSOR_DEPTH));
 
     }
 

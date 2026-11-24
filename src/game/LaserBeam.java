@@ -15,7 +15,7 @@ public class LaserBeam extends Entity {
 
   // Laser appearance
   private static final int SPRITE_SIZE = 20;
-  private static final int END_HIT_OVERLAP = 8;
+  private static final int END_HIT_OVERLAP = 12;
 
   private final Laser source;
   private final BufferedImage redBodyTexture;
@@ -77,14 +77,14 @@ public class LaserBeam extends Entity {
         int bodyWidth = hit ? Math.max(0, length - endWidth + END_HIT_OVERLAP) : length;
 
         // Draw the laser beam unblocked beams continue until the window clips them
-        g.drawImage(bodyTexture, 0, -SPRITE_SIZE / 2, bodyWidth, SPRITE_SIZE, null);
+        g.drawImage(bodyTexture, 0, -SPRITE_SIZE / 2, bodyWidth + END_HIT_OVERLAP, SPRITE_SIZE, null);
 
         // Only draw LaserEnd when an entity is hit
         if (hit) {
 
           // IMPORTANT: This slightly shrinks the endpoint of the laser so it matches the
           // width of the laser beam
-          int endHeight = SPRITE_SIZE - 4;
+          int endHeight = SPRITE_SIZE;
 
           // Draw the endpoint flipped horizontally
           g.drawImage(endTexture, bodyWidth, -endHeight / 2, bodyWidth + endWidth, endHeight / 2, endTexture.getWidth(),
